@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Wi-Fi Interference Analyzer
 
 A tool to measure and visualize how Wi-Fi interference affects your network performance.
@@ -123,3 +124,6 @@ wa-analyzer/
 **Module import errors:**
 - Run from wa-analyzer directory
 - Check Python path
+=======
+# WA-Repo
+>>>>>>> f0254703dbb720752cff0cfe9c12a47f03215707
