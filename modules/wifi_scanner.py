@@ -16,7 +16,7 @@ class WiFiScanner:
         self.interface = interface
         self.supported_bands: list = [2.4, 5]
         
-    def scan_networks(self) -> list:
+    def scan_networks(self) -> dict:
         """Scan for available Wi-Fi networks using airodump-ng"""
         import os
         import time
@@ -31,7 +31,7 @@ class WiFiScanner:
             stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
         )
         
-        time.sleep(8)
+        time.sleep(15)
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
         try:
             proc.terminate()
@@ -42,10 +42,13 @@ class WiFiScanner:
         try:
             if os.path.exists('/tmp/scan_temp-01.csv'):
                 with open('/tmp/scan_temp-01.csv', 'r') as f:
-                    return self._parse_airodump_csv(f.read())
+                    csv_content = f.read()
+                networks = self._parse_airodump_csv(csv_content)
+                probed = self.get_probed_networks(csv_content)
+                return {'networks': networks, 'probed_networks': probed}
         except Exception as e:
             print(f"Scan error: {e}")
-        return []
+        return {'networks': [], 'probed_networks': []}
     
     def scan_networks_with_channels(self) -> list:
         """Scan with channel-by-channel approach for accurate channel info (slower but more accurate)"""
@@ -223,6 +226,33 @@ class WiFiScanner:
                 except (ValueError, IndexError):
                     continue
         return networks
+    
+    def get_probed_networks(self, csv_data: str) -> list:
+        """Extract probed ESSIDs from station data (reveals hidden SSIDs)"""
+        probed = []
+        lines = csv_data.strip().split('\n')
+        in_station_section = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            if line.startswith('Station'):
+                in_station_section = True
+                continue
+            
+            if in_station_section and line and not line.startswith('BSSID'):
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 7:
+                    station_mac = parts[0].strip()
+                    if station_mac and len(station_mac) == 17 and ':' in station_mac:
+                        probed_essids = parts[6].strip() if len(parts) > 6 else ''
+                        if probed_essids and probed_essids != '(not associated)':
+                            probed.append({
+                                'device_mac': station_mac,
+                                'probed_ssids': probed_essids.split(',')
+                            })
+        
+        return probed
     
     def _channel_to_freq(self, channel: int) -> int:
         """Convert channel to frequency"""

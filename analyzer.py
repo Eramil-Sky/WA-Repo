@@ -41,12 +41,15 @@ class WiFiInterferenceAnalyzer:
         }
         
         print("📡 Scanning networks...")
-        networks = self.scanner.scan_networks()
+        scan_result = self.scanner.scan_networks()
+        networks = scan_result.get('networks', [])
+        probed_networks = scan_result.get('probed_networks', [])
         signal_info = self.scanner.get_signal_info()
         noise_floor = self.scanner.get_noise_floor()
         
         analysis['scan_data'] = {
             'networks': networks,
+            'probed_networks': probed_networks,
             'network_count': len(networks),
             'rssi': signal_info.get('rssi') if signal_info else None,
             'tx_rate': signal_info.get('tx_rate') if signal_info else None,
@@ -54,6 +57,8 @@ class WiFiInterferenceAnalyzer:
             'noise': noise_floor
         }
         print(f"   Found {len(networks)} networks")
+        if probed_networks:
+            print(f"   Found {len(probed_networks)} devices probing networks")
         
         print("📊 Analyzing interference...")
         analysis['interference_data'] = self.detector.analyze(networks)
@@ -159,6 +164,21 @@ class WiFiInterferenceAnalyzer:
                 rssi = net.get('rssi', '?')
                 band = net.get('band', '?')[:5]
                 print(f"   {ssid:<25} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
+        
+        probed = analysis['scan_data'].get('probed_networks', [])
+        if probed:
+            all_ssids = set()
+            for item in probed:
+                for ssid in item.get('probed_ssids', []):
+                    ssid = ssid.strip()
+                    if ssid:
+                        all_ssids.add(ssid)
+            if all_ssids:
+                print("\n   🔍 Probed Networks (from device searches):")
+                print(f"   {'Network Name (SSID)':<30}")
+                print(f"   {'-'*30}")
+                for ssid in sorted(all_ssids)[:15]:
+                    print(f"   {ssid:<30}")
         
         print("\n📊 Interference Impact:")
         impact = analysis['correlation_data']['interference_impact']
