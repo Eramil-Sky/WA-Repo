@@ -154,16 +154,39 @@ class WiFiInterferenceAnalyzer:
         
         networks = analysis['scan_data'].get('networks', [])
         if networks:
+            probed = analysis['scan_data'].get('probed_networks', [])
+            probed = probed if probed else []
+            
+            bssid_to_ssids = {}
+            for item in probed:
+                device_mac = item.get('device_mac', '')
+                ssids = item.get('probed_ssids', [])
+                for ssid in ssids:
+                    ssid = ssid.strip()
+                    if ssid:
+                        bssid_to_ssids[ssid] = ssid
+            
             print("\n   📶 Detected Networks:")
-            print(f"   {'SSID':<25} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
-            print(f"   {'-'*60}")
+            print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+            print(f"   {'-'*65}")
             for net in networks[:10]:
-                ssid = net.get('ssid', '<Hidden>')[:24]
                 bssid = net.get('bssid', 'N/A')
                 ch = net.get('channel', '?')
                 rssi = net.get('rssi', '?')
                 band = net.get('band', '?')[:5]
-                print(f"   {ssid:<25} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
+                
+                hidden_ssid = '<Hidden>'
+                for probed_item in probed:
+                    connected_bssid = probed_item.get('connected_bssid', '')
+                    if connected_bssid and connected_bssid.lower() == bssid.lower():
+                        ssids = probed_item.get('probed_ssids', [])
+                        for ssid in ssids:
+                            ssid = ssid.strip()
+                            if ssid and ssid != '(not associated)':
+                                hidden_ssid = ssid[:19]
+                                break
+                
+                print(f"   {hidden_ssid:<20} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
         
         probed = analysis['scan_data'].get('probed_networks', [])
         if probed:

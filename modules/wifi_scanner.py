@@ -228,7 +228,7 @@ class WiFiScanner:
         return networks
     
     def get_probed_networks(self, csv_data: str) -> list:
-        """Extract probed ESSIDs from station data (reveals hidden SSIDs)"""
+        """Extract probed ESSIDs and connected BSSIDs from station data (reveals hidden SSIDs)"""
         probed = []
         lines = csv_data.strip().split('\n')
         in_station_section = False
@@ -242,15 +242,26 @@ class WiFiScanner:
             
             if in_station_section and line and not line.startswith('BSSID'):
                 parts = [p.strip() for p in line.split(',')]
-                if len(parts) >= 7:
+                if len(parts) >= 6:
                     station_mac = parts[0].strip()
                     if station_mac and len(station_mac) == 17 and ':' in station_mac:
+                        connected_bssid = parts[5].strip() if len(parts) > 5 else ''
                         probed_essids = parts[6].strip() if len(parts) > 6 else ''
+                        
+                        item = {
+                            'device_mac': station_mac,
+                            'probed_ssids': [],
+                            'connected_bssid': ''
+                        }
+                        
+                        if connected_bssid and connected_bssid != '(not associated)' and ':' in connected_bssid:
+                            item['connected_bssid'] = connected_bssid
+                        
                         if probed_essids and probed_essids != '(not associated)':
-                            probed.append({
-                                'device_mac': station_mac,
-                                'probed_ssids': probed_essids.split(',')
-                            })
+                            item['probed_ssids'] = [s.strip() for s in probed_essids.split(',') if s.strip()]
+                        
+                        if item['probed_ssids'] or item['connected_bssid']:
+                            probed.append(item)
         
         return probed
     
