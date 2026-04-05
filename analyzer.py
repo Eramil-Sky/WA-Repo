@@ -161,15 +161,15 @@ class WiFiInterferenceAnalyzer:
         
         print("\n⚡ Performance Metrics:")
         perf = analysis['performance_data']
-        if perf.get('latency'):
-            lat = perf['latency']
-            print(f"   Latency: {lat.get('latency_avg', 'N/A'):.1f} ms (avg)")
-            print(f"   Jitter: {lat.get('jitter', 'N/A')} ms")
-            print(f"   Packet Loss: {lat.get('packet_loss', 'N/A')}%")
+        lat = perf.get('latency') or {}
+        lat_avg = lat.get('latency_avg')
+        print(f"   Latency: {lat_avg:.1f} ms (avg)" if lat_avg is not None else "   Latency: N/A")
+        print(f"   Jitter: {lat.get('jitter', 'N/A')} ms")
+        print(f"   Packet Loss: {lat.get('packet_loss', 'N/A')}%")
         
-        if perf.get('throughput'):
-            tp = perf['throughput']
-            print(f"   Throughput: {tp.get('throughput_mbps', 'N/A')} Mbps ({tp.get('type', 'N/A')})")
+        tp = perf.get('throughput') or {}
+        tp_mbps = tp.get('throughput_mbps')
+        print(f"   Throughput: {tp_mbps} Mbps ({tp.get('type', 'N/A')})" if tp_mbps else "   Throughput: N/A")
         
         print("\n💡 Recommendations:")
         for i, rec in enumerate(analysis['recommendations'], 1):
