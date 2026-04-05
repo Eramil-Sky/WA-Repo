@@ -34,13 +34,23 @@ class PerformanceTester:
             
             return self._parse_ping_result(result)
         except Exception as e:
-            return {
-                'error': str(e),
-                'latency_avg': None,
-                'latency_min': None,
-                'latency_max': None,
-                'packet_loss': 100
-            }
+            try:
+                result = subprocess.check_output(
+                    ['ping', '-c', str(count), target],
+                    stderr=subprocess.DEVNULL,
+                    timeout=30
+                ).decode('utf-8', errors='ignore')
+                
+                return self._parse_ping_result(result)
+            except Exception as e2:
+                return {
+                    'error': str(e2),
+                    'latency_avg': None,
+                    'latency_min': None,
+                    'latency_max': None,
+                    'packet_loss': 100,
+                    'note': 'Interface in monitor mode or no route to host'
+                }
     
     def _parse_ping_result(self, output: str) -> Dict:
         """Parse ping output"""

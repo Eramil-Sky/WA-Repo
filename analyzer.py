@@ -1882,6 +1882,35 @@ class WiFiInterferenceAnalyzer:
         congestion = analysis['interference_data'].get('channel_congestion', {})
         impact = analysis['correlation_data']['interference_impact']
         
+        networks_2g = [n for n in networks if '2.4' in str(n.get('band', ''))]
+        if networks_2g:
+            print("\n📺 CHANNEL HEATMAP (2.4 GHz):")
+            channel_counts = {}
+            for net in networks_2g:
+                ch = net.get('channel')
+                if ch:
+                    channel_counts[ch] = channel_counts.get(ch, 0) + 1
+            
+            print("   Channel: ", end="")
+            for ch in range(1, 14):
+                print(f"{ch:>3}", end="")
+            print()
+            print("   " + "-" * 39)
+            print("   Networks: ", end="")
+            for ch in range(1, 14):
+                count = channel_counts.get(ch, 0)
+                bars = min(count, 5)
+                if bars > 0:
+                    if count >= 3:
+                        print(f"{'🔴' * bars:>6}", end="")
+                    elif count >= 2:
+                        print(f"{'🟠' * bars:>6}", end="")
+                    else:
+                        print(f"{'🟢' * bars:>6}", end="")
+                else:
+                    print(f"     ", end="")
+            print()
+        
         print("\n📊 CURRENT STATUS:")
         print(f"   • Interference Level: {impact['level']} (Score: {impact['score']}/15)")
         print(f"   • Total Networks Detected: {len(networks)}")
@@ -1942,6 +1971,168 @@ class WiFiInterferenceAnalyzer:
         print("\n" + "=" * 60)
 
 
+def run_demo_mode(args):
+    """Run analyzer in demo mode with simulated data"""
+    print("\n" + "=" * 60)
+    print("🎯 DEMO MODE - Simulated Wi-Fi Environment")
+    print("=" * 60)
+    print("\n⚠️  Running with simulated data for demonstration purposes\n")
+    
+    demo_networks = [
+        {'bssid': 'AA:BB:CC:DD:EE:01', 'ssid': 'HomeNetwork', 'channel': 1, 'rssi': -55, 'band': '2.4GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:02', 'ssid': 'Neighbor_5G', 'channel': 6, 'rssi': -62, 'band': '5GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:03', 'ssid': '<Hidden>', 'channel': 6, 'rssi': -68, 'band': '2.4GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:04', 'ssid': 'Office_WiFi', 'channel': 11, 'rssi': -72, 'band': '2.4GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:05', 'ssid': 'Guest_Network', 'channel': 11, 'rssi': -75, 'band': '2.4GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:06', 'ssid': 'Gaming_5G', 'channel': 36, 'rssi': -58, 'band': '5GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:07', 'ssid': '<Hidden>', 'channel': 1, 'rssi': -80, 'band': '2.4GHz'},
+        {'bssid': 'AA:BB:CC:DD:EE:08', 'ssid': 'SmartHome', 'channel': 6, 'rssi': -85, 'band': '2.4GHz'},
+    ]
+    
+    demo_devices = [
+        {'device_mac': '11:22:33:44:55:66', 'manufacturer': 'Apple', 'signal': -50, 'connected_to': 'AA:BB:CC:DD:EE:01'},
+        {'device_mac': 'AA:BB:CC:DD:EE:FF', 'manufacturer': 'Samsung', 'signal': -55, 'connected_to': 'AA:BB:CC:DD:EE:02'},
+        {'device_mac': 'DE:AD:BE:EF:CA:FE', 'manufacturer': 'Intel', 'signal': -60, 'connected_to': 'AA:BB:CC:DD:EE:01'},
+        {'device_mac': 'FE:DC:BA:98:76:54', 'manufacturer': 'HP', 'signal': -65, 'connected_to': ''},
+    ]
+    
+    demo_searching = [
+        {'device_mac': '11:22:33:44:55:66', 'manufacturer': 'Apple', 'signal': -45, 'searching': ['HomeNetwork', 'HomeNetwork_5G']},
+        {'device_mac': 'AA:BB:CC:DD:EE:FF', 'manufacturer': 'Samsung', 'signal': -52, 'searching': ['Neighbor_5G']},
+        {'device_mac': 'DE:AD:BE:EF:CA:FE', 'manufacturer': 'Intel', 'signal': -58, 'searching': ['Office_WiFi', 'Office_5G']},
+        {'device_mac': 'FE:DC:BA:98:76:54', 'manufacturer': 'HP', 'signal': -62, 'searching': ['Guest_Network']},
+        {'device_mac': '98:76:54:32:10:FE', 'manufacturer': 'Dell', 'signal': -55, 'searching': ['Gaming_5G']},
+    ]
+    
+    print("\n" + "=" * 60)
+    print("📊 WI-FI INTERFERENCE ANALYSIS SUMMARY (DEMO)")
+    print("=" * 60)
+    
+    print("\n📡 Network Overview:")
+    print(f"   Networks detected: {len(demo_networks)}")
+    print(f"   Your signal: -55 dBm (simulated)")
+    print(f"   Noise floor: -95 dBm (simulated)")
+    print(f"   SNR: 40 dB (Good)")
+    
+    networks_2g = [n for n in demo_networks if '2.4' in n['band']]
+    networks_5g = [n for n in demo_networks if '5' in n['band']]
+    
+    if networks_2g:
+        print("\n   📶 2.4 GHz NETWORKS:")
+        print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+        print(f"   {'-'*60}")
+        for net in networks_2g:
+            print(f"   {net['ssid']:<20} {net['bssid']:<18} {net['channel']:<4} {net['rssi']:<6} {net['band'][:5]:<6}")
+    
+    if networks_5g:
+        print("\n   📶 5 GHz NETWORKS:")
+        print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+        print(f"   {'-'*60}")
+        for net in networks_5g:
+            print(f"   {net['ssid']:<20} {net['bssid']:<18} {net['channel']:<4} {net['rssi']:<6} {net['band'][:5]:<6}")
+    
+    print("\n📱 CONNECTED DEVICES:")
+    print(f"   {'Device':<15} {'RSSI':<6} {'Manufacturer':<15} {'Connected To':<18}")
+    print(f"   {'-'*70}")
+    for dev in demo_devices:
+        if dev['connected_to']:
+            print(f"   {dev['manufacturer']:<15} {dev['signal']:<6} {dev['manufacturer']:<15} {dev['connected_to']:<18}")
+    
+    print("\n🔍 DEVICES SEARCHING FOR WI-FI:")
+    print(f"   {'Device':<15} {'RSSI':<6} {'Manufacturer':<15} {'Searching For':<20}")
+    print(f"   {'-'*70}")
+    seen = set()
+    for dev in demo_searching:
+        for ssid in dev['searching']:
+            if ssid not in seen:
+                print(f"   {dev['manufacturer']:<15} {dev['signal']:<6} {dev['manufacturer']:<15} {ssid:<20}")
+                seen.add(ssid)
+    
+    print("\n📺 CHANNEL HEATMAP (2.4 GHz):")
+    channel_counts = {}
+    for net in networks_2g:
+        ch = net['channel']
+        channel_counts[ch] = channel_counts.get(ch, 0) + 1
+    
+    print("   Channel: ", end="")
+    for ch in range(1, 14):
+        print(f"{ch:>3}", end="")
+    print()
+    print("   " + "-" * 39)
+    print("   Networks: ", end="")
+    for ch in range(1, 14):
+        count = channel_counts.get(ch, 0)
+        bars = min(count, 5)
+        if bars > 0:
+            print(f"{'█' * bars:>3}", end="")
+        else:
+            print(f"   ", end="")
+    print()
+    
+    print("\n📊 Interference Impact:")
+    print("   Level: MEDIUM (Demo)")
+    print("   Score: 7.0/15")
+    
+    print("\n⚡ Performance Metrics:")
+    print("   Latency: 25.0 ms (avg) [simulated]")
+    print("   Jitter: 3.2 ms")
+    print("   Packet Loss: 0.5%")
+    print("   Throughput: 85.5 Mbps (estimated)")
+    
+    print("\n" + "=" * 60)
+    print("💡 RECOMMENDATIONS")
+    print("=" * 60)
+    
+    print("\n📊 CURRENT STATUS:")
+    print("   • Interference Level: MEDIUM (Score: 7/15)")
+    print("   • Total Networks Detected: 8")
+    print("   • Channels in Use: 1, 6, 11, 36")
+    
+    print("\n🔧 WHAT TO DO:")
+    
+    print("\n   1️⃣  SWITCH TO CHANNEL 1 OR 36 (2.4 GHz / 5 GHz)")
+    print("      WHY: Channel 6 is crowded with 3 networks")
+    print("      CURRENT: 3 network(s) on channel 6")
+    print("      RECOMMENDED: Channel 1 (2 networks) or 5 GHz (less congestion)")
+    print("      ACTION: Go to your router settings → Wireless → Channel → Select 1")
+    
+    print("\n   2️⃣  CONSIDER 5 GHz BAND")
+    print("      WHY: 5 GHz has more channels and less interference")
+    print("      RECOMMENDED: Channel 36 or 149")
+    print("      BENEFITS: Faster speeds, less congestion, more channels")
+    print("      ACTION: Enable 5 GHz on your router or connect to 5 GHz network")
+    
+    print("\n   3️⃣  HIGH INTERFERENCE ON CHANNEL 6")
+    print("      IMPACT: Slow speeds, dropped connections, poor streaming")
+    print("      NETWORKS AFFECTED: 3 networks competing for same frequency")
+    print("      SOLUTION: Move to channel 1 or switch to 5 GHz")
+    
+    print("\n📋 INTERFERENCE SCALE (0-15):")
+    print("   🟢 MINIMAL (0-2):   No interference")
+    print("   🟡 LOW (3-5):      Minor interference")
+    print("   🟠 MEDIUM (6-9):    Noticeable interference")
+    print("   🔴 HIGH (10-14):    Significant interference")
+    print("   ⚫ CRITICAL (15+):  Severe interference")
+    
+    print("\n📋 QUICK GUIDE:")
+    print("   • Channel 1, 6, 11 are the only non-overlapping 2.4 GHz channels")
+    print("   • Lower interference = Faster speeds = Better experience")
+    print("   • 5 GHz is faster but has shorter range")
+    
+    if args.export:
+        with open(args.export, 'w') as f:
+            f.write("Wi-Fi Interference Analysis Report (Demo Mode)\n")
+            f.write("=" * 50 + "\n")
+            f.write(f"Networks: {len(demo_networks)}\n")
+            f.write(f"Interference Score: 7/15\n")
+            f.write(f"Recommendation: Switch to channel 1 or use 5 GHz\n")
+        print(f"\n📄 Report exported to: {args.export}")
+    
+    print("\n" + "=" * 60)
+    print("🎯 END OF DEMO MODE")
+    print("=" * 60)
+
+
 def main():
     import argparse
     
@@ -1949,8 +2140,14 @@ def main():
     parser.add_argument('-i', '--interface', default='wlan0', help='Wi-Fi interface')
     parser.add_argument('-j', '--json', action='store_true', help='Output as JSON')
     parser.add_argument('--db', default='wifi_analyzer.db', help='Database path')
+    parser.add_argument('--demo', action='store_true', help='Run in demo mode with simulated data')
+    parser.add_argument('--export', metavar='FILE', help='Export report to file')
     
     args = parser.parse_args()
+    
+    if args.demo:
+        run_demo_mode(args)
+        return
     
     analyzer = WiFiInterferenceAnalyzer(interface=args.interface)
     
