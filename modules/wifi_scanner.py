@@ -17,12 +17,43 @@ class WiFiScanner:
         self.supported_bands: list = [2.4, 5]
         
     def scan_networks(self) -> list:
-        """Scan for available Wi-Fi networks using channel-hopping airodump-ng"""
+        """Scan for available Wi-Fi networks using airodump-ng"""
         import os
         import time
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
         for f in ['/tmp/scan_temp-01.csv', '/tmp/scan_temp-01.kismet.csv']:
+            if os.path.exists(f):
+                os.remove(f)
+        
+        proc = subprocess.Popen(
+            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', '/tmp/scan_temp', self.interface],
+            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+        )
+        
+        time.sleep(8)
+        subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        try:
+            proc.terminate()
+            proc.wait(timeout=3)
+        except:
+            subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        
+        try:
+            if os.path.exists('/tmp/scan_temp-01.csv'):
+                with open('/tmp/scan_temp-01.csv', 'r') as f:
+                    return self._parse_airodump_csv(f.read())
+        except Exception as e:
+            print(f"Scan error: {e}")
+        return []
+    
+    def scan_networks_with_channels(self) -> list:
+        """Scan with channel-by-channel approach for accurate channel info (slower but more accurate)"""
+        import os
+        import time
+        
+        subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        for f in ['/tmp/ch_scan-01.csv', '/tmp/ch_scan-01.kismet.csv']:
             if os.path.exists(f):
                 os.remove(f)
         
