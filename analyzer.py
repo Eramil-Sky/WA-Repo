@@ -1609,6 +1609,8 @@ class WiFiInterferenceAnalyzer:
             return self._oui_cache[oui_dash]
         
         return 'Unknown'
+    
+    def run_full_analysis(self) -> dict:
         """Run complete analysis cycle"""
         print("🔍 Starting Wi-Fi Interference Analysis...\n")
         
