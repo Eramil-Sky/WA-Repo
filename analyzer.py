@@ -147,6 +147,19 @@ class WiFiInterferenceAnalyzer:
         if snr:
             print(f"   SNR: {snr:.1f} dB")
         
+        networks = analysis['scan_data'].get('networks', [])
+        if networks:
+            print("\n   📶 Detected Networks:")
+            print(f"   {'SSID':<25} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+            print(f"   {'-'*60}")
+            for net in networks[:10]:
+                ssid = net.get('ssid', '<Hidden>')[:24]
+                bssid = net.get('bssid', 'N/A')
+                ch = net.get('channel', '?')
+                rssi = net.get('rssi', '?')
+                band = net.get('band', '?')[:5]
+                print(f"   {ssid:<25} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
+        
         print("\n📊 Interference Impact:")
         impact = analysis['correlation_data']['interference_impact']
         print(f"   Level: {impact['level']}")
