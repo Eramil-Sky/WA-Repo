@@ -245,13 +245,16 @@ class WiFiScanner:
                 if len(parts) >= 6:
                     station_mac = parts[0].strip()
                     if station_mac and len(station_mac) == 17 and ':' in station_mac:
+                        signal_str = parts[3].strip() if len(parts) > 3 else '-100'
+                        signal = int(signal_str) if signal_str.lstrip('-').isdigit() else -100
                         connected_bssid = parts[5].strip() if len(parts) > 5 else ''
                         probed_essids = parts[6].strip() if len(parts) > 6 else ''
                         
                         item = {
                             'device_mac': station_mac,
                             'probed_ssids': [],
-                            'connected_bssid': ''
+                            'connected_bssid': '',
+                            'signal': signal
                         }
                         
                         if connected_bssid and connected_bssid != '(not associated)' and ':' in connected_bssid:

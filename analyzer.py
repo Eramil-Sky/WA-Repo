@@ -190,16 +190,51 @@ class WiFiInterferenceAnalyzer:
         
         probed = analysis['scan_data'].get('probed_networks', [])
         if probed:
-            print("\n   🔍 Probed Networks (from device searches):")
-            print(f"   {'Device MAC':<19} {'SSID':<30}")
+            print("\n   📱 Connected Devices:")
+            print(f"   {'Device MAC':<19} {'Connected To (BSSID)':<19} {'Signal':<8}")
             print(f"   {'-'*50}")
-            for item in probed[:15]:
-                device_mac = item.get('device_mac', 'N/A')
+            connected_devices = []
+            for item in probed:
+                connected_bssid = item.get('connected_bssid', '')
+                if connected_bssid and ':' in connected_bssid:
+                    device_mac = item.get('device_mac', 'N/A')
+                    signal = item.get('signal', 'N/A')
+                    connected_devices.append({
+                        'device': device_mac,
+                        'bssid': connected_bssid,
+                        'signal': signal
+                    })
+                    print(f"   {device_mac:<19} {connected_bssid:<19}")
+            
+            if connected_devices:
+                bssid_set = {d['bssid'] for d in connected_devices}
+                print(f"\n   📶 Networks: {len(bssid_set)}")
+                for bssid in sorted(bssid_set):
+                    count = sum(1 for d in connected_devices if d['bssid'] == bssid)
+                    print(f"      {bssid}: {count} device(s) connected")
+            
+            searching = []
+            for item in probed:
                 ssids = item.get('probed_ssids', [])
+                device_mac = item.get('device_mac', 'N/A')
                 for ssid in ssids:
                     ssid = ssid.strip()
-                    if ssid:
-                        print(f"   {device_mac:<19} {ssid:<30}")
+                    if ssid and ssid not in [d.get('connected_to') for d in searching]:
+                        searching.append({
+                            'device': device_mac,
+                            'ssid': ssid
+                        })
+            
+            if searching:
+                print("\n   🔍 Device Search History:")
+                print(f"   {'Device MAC':<19} {'Searching For':<25}")
+                print(f"   {'-'*45}")
+                seen_ssids = set()
+                for item in searching[:15]:
+                    ssid = item.get('ssid', 'N/A')
+                    if ssid not in seen_ssids:
+                        print(f"   {item.get('device', 'N/A'):<19} {ssid:<25}")
+                        seen_ssids.add(ssid)
         
         print("\n📊 Interference Impact:")
         impact = analysis['correlation_data']['interference_impact']
