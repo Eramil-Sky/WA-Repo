@@ -91,27 +91,44 @@ class WiFiScanner:
         networks = []
         lines = csv_data.strip().split('\n')
         for line in lines:
-            if not line or line.startswith('BSSID') or 'First time seen' in line:
+            if not line or line.startswith('BSSID') or 'First time seen' in line or line.startswith('Station'):
                 continue
             parts = [p.strip() for p in line.split(',')]
             if len(parts) >= 14:
                 try:
                     bssid = parts[0]
-                    power = parts[3] if parts[3] != ' -1 ' else '-100'
-                    channel = parts[3] if len(parts) > 3 else '1'
-                    ssid = parts[13] if len(parts) > 13 else 'Hidden'
+                    channel_str = parts[3].strip()
+                    power_str = parts[8].strip()
+                    essid_len = int(parts[12].strip()) if parts[12].strip().isdigit() else 0
+                    essid = parts[13].strip() if len(parts) > 13 else ''
                     
-                    if bssid and len(bssid) == 17:
-                        freq = self._channel_to_freq(int(channel) if channel.isdigit() else 1)
-                        networks.append({
-                            'timestamp': datetime.now().isoformat(),
-                            'bssid': bssid,
-                            'ssid': ssid,
-                            'rssi': int(power) if power.lstrip('-').isdigit() else -100,
-                            'channel': int(channel) if channel.isdigit() else 1,
-                            'frequency': freq,
-                            'band': '2.4GHz' if freq < 3000 else '5GHz'
-                        })
+                    if not bssid or len(bssid) != 17 or ':' not in bssid:
+                        continue
+                    
+                    channel = int(channel_str) if channel_str.isdigit() and int(channel_str) > 0 else None
+                    rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
+                    
+                    ssid = essid if essid and essid_len > 0 else '<Hidden>'
+                    
+                    freq = 0
+                    band = 'Unknown'
+                    if channel:
+                        freq = self._channel_to_freq(channel)
+                        band = '2.4GHz' if 2400 <= freq <= 2500 else '5GHz'
+                    elif rssi > -100:
+                        freq = 2437
+                        band = '2.4GHz'
+                        channel = 6
+                    
+                    networks.append({
+                        'timestamp': datetime.now().isoformat(),
+                        'bssid': bssid,
+                        'ssid': ssid,
+                        'rssi': rssi,
+                        'channel': channel if channel else 1,
+                        'frequency': freq if freq else 2437,
+                        'band': band
+                    })
                 except (ValueError, IndexError):
                     continue
         return networks
