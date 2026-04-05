@@ -85,8 +85,10 @@ class CorrelationEngine:
             )
         }
     
-    def _calculate_snr(self, rssi: int, noise: int) -> float:
+    def _calculate_snr(self, rssi, noise) -> float:
         """Calculate Signal-to-Noise Ratio"""
+        if rssi is None or noise is None:
+            return 0
         if noise >= 0:
             noise = -100
         return rssi - noise

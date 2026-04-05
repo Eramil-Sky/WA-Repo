@@ -17,17 +17,22 @@ class WiFiScanner:
         self.supported_bands: list = [2.4, 5]
         
     def scan_networks(self) -> list:
-        """Scan for available Wi-Fi networks"""
+        """Scan for available Wi-Fi networks using airodump-ng"""
         try:
             result = subprocess.check_output(
-                ['sudo', 'iw', 'dev', self.interface, 'scan'],
+                ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', '/tmp/scan_temp', self.interface],
                 stderr=subprocess.DEVNULL,
-                timeout=30
-            ).decode('utf-8', errors='ignore')
+                timeout=10
+            )
+            import time
+            time.sleep(5)
+            subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
             
-            return self._parse_scan_output(result)
-        except subprocess.TimeoutExpired:
-            print(f"Scan timeout on {self.interface}")
+            try:
+                with open('/tmp/scan_temp-01.csv', 'r') as f:
+                    return self._parse_airodump_csv(f.read())
+            except FileNotFoundError:
+                pass
             return []
         except Exception as e:
             print(f"Scan error: {e}")
@@ -74,6 +79,46 @@ class WiFiScanner:
             networks.append(current_network)
         
         return networks
+    
+    def _parse_airodump_csv(self, csv_data: str) -> list:
+        """Parse airodump-ng CSV output into structured data"""
+        networks = []
+        lines = csv_data.strip().split('\n')
+        for line in lines:
+            if not line or line.startswith('BSSID') or 'First time seen' in line:
+                continue
+            parts = [p.strip() for p in line.split(',')]
+            if len(parts) >= 14:
+                try:
+                    bssid = parts[0]
+                    power = parts[3] if parts[3] != ' -1 ' else '-100'
+                    channel = parts[3] if len(parts) > 3 else '1'
+                    ssid = parts[13] if len(parts) > 13 else 'Hidden'
+                    
+                    if bssid and len(bssid) == 17:
+                        freq = self._channel_to_freq(int(channel) if channel.isdigit() else 1)
+                        networks.append({
+                            'timestamp': datetime.now().isoformat(),
+                            'bssid': bssid,
+                            'ssid': ssid,
+                            'rssi': int(power) if power.lstrip('-').isdigit() else -100,
+                            'channel': int(channel) if channel.isdigit() else 1,
+                            'frequency': freq,
+                            'band': '2.4GHz' if freq < 3000 else '5GHz'
+                        })
+                except (ValueError, IndexError):
+                    continue
+        return networks
+    
+    def _channel_to_freq(self, channel: int) -> int:
+        """Convert channel to frequency"""
+        if 1 <= channel <= 13:
+            return 2407 + (channel * 5)
+        elif channel == 14:
+            return 2484
+        elif 36 <= channel <= 165:
+            return 5000 + (channel * 5)
+        return 2437
     
     def _freq_to_channel(self, freq: int) -> int:
         """Convert frequency to channel number"""
