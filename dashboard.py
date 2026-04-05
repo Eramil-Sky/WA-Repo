@@ -4,7 +4,7 @@ WA-CPE Wi-Fi Analyzer Dashboard
 Web-based dashboard for real-time Wi-Fi analysis
 """
 
-from flask import Flask, render_template_string, jsonify
+from flask import Flask, render_template_string, jsonify, request, redirect, session
 import subprocess
 import threading
 import time
@@ -19,6 +19,47 @@ from modules.performance_tester import PerformanceTester
 from modules.correlation_engine import CorrelationEngine
 
 app = Flask(__name__)
+app.secret_key = 'wa-cpe-wifi-analyzer-secret-key-2026'
+
+USERNAME = 'admin'
+PASSWORD = 'Logmein@1'
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page"""
+    if request.method == 'POST':
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        
+        if username == USERNAME and password == PASSWORD:
+            session['logged_in'] = True
+            return redirect('/')
+        else:
+            return render_template_string(LOGIN_HTML, error='Invalid credentials')
+    
+    return render_template_string(LOGIN_HTML)
+
+@app.route('/logout')
+def logout():
+    """Logout"""
+    session.pop('logged_in', None)
+    return redirect('/login')
+
+def require_auth(f):
+    """Decorator to require authentication"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/')
+@require_auth
+def dashboard():
+    """Main dashboard page"""
+    return render_template_string(DASHBOARD_HTML)
 
 latest_analysis = {
     'timestamp': None,
@@ -87,11 +128,13 @@ def dashboard():
     return render_template_string(DASHBOARD_HTML)
 
 @app.route('/api/data')
+@require_auth
 def get_data():
     """API endpoint for real-time data"""
     return jsonify(latest_analysis)
 
 @app.route('/api/networks')
+@require_auth
 def get_networks():
     """API endpoint for networks only"""
     return jsonify({
@@ -101,6 +144,7 @@ def get_networks():
     })
 
 @app.route('/api/interference')
+@require_auth
 def get_interference():
     """API endpoint for interference data"""
     return jsonify({
@@ -108,6 +152,78 @@ def get_interference():
         'congestion': latest_analysis.get('channel_congestion', {}),
         'recommendations': latest_analysis.get('recommendations', {})
     })
+
+LOGIN_HTML = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WA-CPE Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 350px;
+            text-align: center;
+        }
+        .login-box h1 { color: #00d9ff; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #888; margin-bottom: 30px; font-size: 14px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; color: #888; font-size: 12px; margin-bottom: 5px; }
+        .input-group input {
+            width: 100%; padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #fff; font-size: 14px;
+        }
+        .input-group input:focus { outline: none; border-color: #00d9ff; }
+        .btn {
+            width: 100%; padding: 12px;
+            background: #00d9ff; color: #1a1a2e;
+            border: none; border-radius: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+        }
+        .btn:hover { background: #00b8d9; }
+        .error {
+            background: rgba(255,0,0,0.2); color: #ff6666;
+            padding: 10px; border-radius: 8px;
+            margin-bottom: 20px; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>📡 WA-CPE Wi-Fi Analyzer</h1>
+        <p>Please login to access the dashboard</p>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="POST">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Enter username" required>
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+    </div>
+</body>
+</html>
+'''
 
 DASHBOARD_HTML = '''
 <!DOCTYPE html>
