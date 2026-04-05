@@ -17,9 +17,8 @@ class WiFiScanner:
         self.supported_bands: list = [2.4, 5]
         
     def scan_networks(self) -> list:
-        """Scan for available Wi-Fi networks using airodump-ng"""
+        """Scan for available Wi-Fi networks using channel-hopping airodump-ng"""
         import os
-        import signal
         import time
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
@@ -27,22 +26,80 @@ class WiFiScanner:
             if os.path.exists(f):
                 os.remove(f)
         
-        proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', '/tmp/scan_temp', self.interface],
-            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
-        )
+        channels_2g = [1, 6, 11, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13]
+        channels_5g = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165]
+        all_channels = channels_2g + channels_5g
         
-        time.sleep(8)
-        subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-        proc.terminate()
+        bssid_channels = {}
+        bssid_data = {}
         
-        try:
-            if os.path.exists('/tmp/scan_temp-01.csv'):
-                with open('/tmp/scan_temp-01.csv', 'r') as f:
-                    return self._parse_airodump_csv(f.read())
-        except Exception as e:
-            print(f"Scan error: {e}")
-        return []
+        for ch in all_channels:
+            subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+            time.sleep(0.5)
+            
+            try:
+                proc = subprocess.Popen(
+                    ['sudo', 'airodump-ng', '-c', str(ch), '-o', 'csv', '-w', '/tmp/ch_scan', self.interface],
+                    stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+                )
+                time.sleep(1.5)
+                subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+                proc.terminate()
+                proc.wait(timeout=2)
+            except:
+                pass
+            
+            try:
+                if os.path.exists('/tmp/ch_scan-01.csv'):
+                    with open('/tmp/ch_scan-01.csv', 'r') as f:
+                        content = f.read()
+                    for line in content.split('\n'):
+                        if line.startswith('BSSID') or 'First time' in line or not line.strip():
+                            continue
+                        parts = [p.strip() for p in line.split(',')]
+                        if len(parts) >= 14 and parts[0] and len(parts[0]) == 17:
+                            bssid = parts[0]
+                            power_str = parts[8].strip() if len(parts) > 8 else '-100'
+                            rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
+                            
+                            if bssid not in bssid_channels:
+                                bssid_channels[bssid] = ch
+                                bssid_data[bssid] = {
+                                    'rssi': rssi,
+                                    'essid': '',
+                                    'essid_len': 0
+                                }
+                                try:
+                                    bssid_data[bssid]['essid_len'] = int(parts[12].strip()) if parts[12].strip().isdigit() else 0
+                                    bssid_data[bssid]['essid'] = parts[13].strip() if len(parts) > 13 else ''
+                                except:
+                                    pass
+                            else:
+                                if rssi > bssid_data[bssid]['rssi']:
+                                    bssid_data[bssid]['rssi'] = rssi
+            except:
+                pass
+        
+        networks = []
+        for bssid, ch in bssid_channels.items():
+            data = bssid_data[bssid]
+            freq = self._channel_to_freq(ch)
+            band = '2.4GHz' if 2400 <= freq <= 2500 else '5GHz'
+            essid = data['essid'] if data['essid_len'] > 0 else '<Hidden>'
+            
+            networks.append({
+                'timestamp': datetime.now().isoformat(),
+                'bssid': bssid,
+                'ssid': essid,
+                'rssi': data['rssi'],
+                'channel': ch,
+                'frequency': freq,
+                'band': band
+            })
+        
+        subprocess.run(['sudo', 'rm', '-f', '/tmp/ch_scan-01.csv', '/tmp/ch_scan-01.kismet.csv'], stderr=subprocess.DEVNULL)
+        
+        return networks
     
     def _parse_scan_output(self, output: str) -> list:
         """Parse iw scan output into structured data"""
