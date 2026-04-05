@@ -26,8 +26,8 @@ class WiFiScanner:
             if os.path.exists(f):
                 os.remove(f)
         
-        channels_2g = [1, 6, 11, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13]
-        channels_5g = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165]
+        channels_2g = [1, 6, 11, 3, 8, 13]
+        channels_5g = [36, 52, 100, 149]
         all_channels = channels_2g + channels_5g
         
         bssid_channels = {}
@@ -35,17 +35,20 @@ class WiFiScanner:
         
         for ch in all_channels:
             subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-            time.sleep(0.5)
+            time.sleep(0.3)
             
             try:
                 proc = subprocess.Popen(
-                    ['sudo', 'airodump-ng', '-c', str(ch), '-o', 'csv', '-w', '/tmp/ch_scan', self.interface],
+                    ['sudo', 'airodump-ng', '--channel', str(ch), '-o', 'csv', '-w', '/tmp/ch_scan', self.interface],
                     stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
                 )
-                time.sleep(1.5)
+                time.sleep(3)
                 subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-                proc.terminate()
-                proc.wait(timeout=2)
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=3)
+                except:
+                    subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
             except:
                 pass
             
@@ -54,29 +57,29 @@ class WiFiScanner:
                     with open('/tmp/ch_scan-01.csv', 'r') as f:
                         content = f.read()
                     for line in content.split('\n'):
-                        if line.startswith('BSSID') or 'First time' in line or not line.strip():
+                        if line.startswith('BSSID') or 'First time' in line or not line.strip() or 'Station' in line:
                             continue
                         parts = [p.strip() for p in line.split(',')]
-                        if len(parts) >= 14 and parts[0] and len(parts[0]) == 17:
-                            bssid = parts[0]
-                            power_str = parts[8].strip() if len(parts) > 8 else '-100'
-                            rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
+                        if len(parts) >= 14:
+                            bssid = parts[0].strip()
+                            if not bssid or len(bssid) != 17 or ':' not in bssid:
+                                continue
+                            try:
+                                power_str = parts[8].strip() if len(parts) > 8 else '-100'
+                                rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
+                                essid_len = int(parts[12].strip()) if parts[12].strip().isdigit() else 0
+                                essid = parts[13].strip() if len(parts) > 13 else ''
+                            except:
+                                continue
                             
                             if bssid not in bssid_channels:
                                 bssid_channels[bssid] = ch
-                                bssid_data[bssid] = {
-                                    'rssi': rssi,
-                                    'essid': '',
-                                    'essid_len': 0
-                                }
-                                try:
-                                    bssid_data[bssid]['essid_len'] = int(parts[12].strip()) if parts[12].strip().isdigit() else 0
-                                    bssid_data[bssid]['essid'] = parts[13].strip() if len(parts) > 13 else ''
-                                except:
-                                    pass
+                                bssid_data[bssid] = {'rssi': rssi, 'essid': essid, 'essid_len': essid_len}
                             else:
                                 if rssi > bssid_data[bssid]['rssi']:
                                     bssid_data[bssid]['rssi'] = rssi
+                                    bssid_data[bssid]['essid'] = essid
+                                    bssid_data[bssid]['essid_len'] = essid_len
             except:
                 pass
         
