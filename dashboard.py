@@ -122,11 +122,6 @@ def run_analysis():
         
         time.sleep(10)
 
-@app.route('/')
-def dashboard():
-    """Main dashboard page"""
-    return render_template_string(DASHBOARD_HTML)
-
 @app.route('/api/data')
 @require_auth
 def get_data():
