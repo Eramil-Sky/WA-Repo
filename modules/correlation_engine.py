@@ -129,9 +129,15 @@ class CorrelationEngine:
                 else:
                     correlation['throughput_impact'] = 'poor'
         
-        packet_loss = latency.get('packet_loss', 0) if latency else 0
-        correlation['stability_impact'] = 'excellent' if packet_loss == 0 else \
-            ('normal' if packet_loss < 1 else 'degraded' if packet_loss < 5 else 'poor')
+        packet_loss = latency.get('packet_loss') if latency else None
+        if packet_loss is None or packet_loss == 0:
+            correlation['stability_impact'] = 'excellent'
+        elif packet_loss < 1:
+            correlation['stability_impact'] = 'normal'
+        elif packet_loss < 5:
+            correlation['stability_impact'] = 'degraded'
+        else:
+            correlation['stability_impact'] = 'poor'
         
         return correlation
     
@@ -211,11 +217,12 @@ class CorrelationEngine:
                 })
         
         latency = performance_data.get('latency') or {}
-        if latency.get('latency_avg', 0) > 50:
+        latency_avg = latency.get('latency_avg')
+        if latency_avg is not None and latency_avg > 50:
             insights.append({
                 'type': 'performance_alert',
                 'priority': 'medium',
-                'message': f'High latency detected ({latency["latency_avg"]:.1f} ms)',
+                'message': f'High latency detected ({latency_avg:.1f} ms)',
                 'action': 'Investigate network congestion'
             })
         
