@@ -1883,7 +1883,7 @@ class WiFiInterferenceAnalyzer:
         impact = analysis['correlation_data']['interference_impact']
         
         print("\n📊 CURRENT STATUS:")
-        print(f"   • Interference Level: {impact['level']} (Score: {impact['score']})")
+        print(f"   • Interference Level: {impact['level']} (Score: {impact['score']}/15)")
         print(f"   • Total Networks Detected: {len(networks)}")
         if networks:
             channels_used = set(n.get('channel') for n in networks if n.get('channel'))
@@ -1926,6 +1926,13 @@ class WiFiInterferenceAnalyzer:
                 for ch in congested_chs:
                     count = congestion[ch].get('network_count', 0)
                     print(f"      Channel {ch}: {count} network(s) overlapping")
+        
+        print("\n📋 INTERFERENCE SCALE (0-15):")
+        print("   🟢 MINIMAL (0-2):   No interference")
+        print("   🟡 LOW (3-5):      Minor interference")
+        print("   🟠 MEDIUM (6-9):    Noticeable interference")
+        print("   🔴 HIGH (10-14):    Significant interference")
+        print("   ⚫ CRITICAL (15+):  Severe interference")
         
         print("\n📋 QUICK GUIDE:")
         print("   • Channel 1, 6, 11 are the only non-overlapping 2.4 GHz channels")
