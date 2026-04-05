@@ -1746,12 +1746,13 @@ class WiFiInterferenceAnalyzer:
             
             if networks_2g:
                 print("\n   📶 2.4 GHz NETWORKS:")
-                print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6}")
-                print(f"   {'-'*55}")
+                print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+                print(f"   {'-'*60}")
                 for net in networks_2g[:10]:
                     bssid = net.get('bssid', 'N/A')
                     ch = net.get('channel', '?')
                     rssi = net.get('rssi', '?')
+                    band = net.get('band', '2.4G')[:5]
                     
                     hidden_ssid = '<Hidden>'
                     for probed_item in probed:
@@ -1764,16 +1765,17 @@ class WiFiInterferenceAnalyzer:
                                     hidden_ssid = ssid[:19]
                                     break
                     
-                    print(f"   {hidden_ssid:<20} {bssid:<18} {ch:<4} {rssi:<6}")
+                    print(f"   {hidden_ssid:<20} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
             
             if networks_5g:
                 print("\n   📶 5 GHz NETWORKS:")
-                print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6}")
-                print(f"   {'-'*55}")
+                print(f"   {'SSID':<20} {'BSSID':<18} {'Ch':<4} {'RSSI':<6} {'Band':<6}")
+                print(f"   {'-'*60}")
                 for net in networks_5g[:10]:
                     bssid = net.get('bssid', 'N/A')
                     ch = net.get('channel', '?')
                     rssi = net.get('rssi', '?')
+                    band = net.get('band', '5G')[:5]
                     
                     hidden_ssid = '<Hidden>'
                     for probed_item in probed:
@@ -1786,7 +1788,7 @@ class WiFiInterferenceAnalyzer:
                                     hidden_ssid = ssid[:19]
                                     break
                     
-                    print(f"   {hidden_ssid:<20} {bssid:<18} {ch:<4} {rssi:<6}")
+                    print(f"   {hidden_ssid:<20} {bssid:<18} {ch:<4} {rssi:<6} {band:<6}")
         
         probed = analysis['scan_data'].get('probed_networks', [])
         
@@ -1872,9 +1874,63 @@ class WiFiInterferenceAnalyzer:
         tp_mbps = tp.get('throughput_mbps')
         print(f"   Throughput: {tp_mbps} Mbps ({tp.get('type', 'N/A')})" if tp_mbps else "   Throughput: N/A")
         
-        print("\n💡 Recommendations:")
-        for i, rec in enumerate(analysis['recommendations'], 1):
-            print(f"   {i}. [{rec['priority'].upper()}] {rec['message']}")
+        print("\n" + "=" * 60)
+        print("💡 RECOMMENDATIONS")
+        print("=" * 60)
+        
+        networks = analysis['scan_data'].get('networks', [])
+        congestion = analysis['interference_data'].get('channel_congestion', {})
+        impact = analysis['correlation_data']['interference_impact']
+        
+        print("\n📊 CURRENT STATUS:")
+        print(f"   • Interference Level: {impact['level']} (Score: {impact['score']})")
+        print(f"   • Total Networks Detected: {len(networks)}")
+        if networks:
+            channels_used = set(n.get('channel') for n in networks if n.get('channel'))
+            print(f"   • Channels in Use: {', '.join(str(c) for c in sorted(channels_used))}")
+        
+        print("\n🔧 WHAT TO DO:")
+        
+        rec_24 = analysis['interference_data'].get('recommendations', {}).get('2.4GHz', {})
+        rec_5 = analysis['interference_data'].get('recommendations', {}).get('5GHz', {})
+        
+        if rec_24.get('recommended'):
+            ch = rec_24['recommended']
+            networks_on_rec = [n for n in networks if n.get('channel') == ch]
+            print(f"\n   1️⃣  SWITCH TO CHANNEL {ch} (2.4 GHz)")
+            print(f"      WHY: This channel has fewer competing networks")
+            if networks_on_rec:
+                print(f"      CURRENT: {len(networks_on_rec)} network(s) on this channel")
+            other_channels = [n for n in networks if n.get('channel') and n.get('channel') != ch]
+            if other_channels:
+                print(f"      OTHER CHANNELS: {len(other_channels)} network(s) competing")
+            print(f"      ACTION: Go to your router settings → Wireless → Channel → Select {ch}")
+        
+        if rec_5.get('recommended'):
+            ch = rec_5['recommended']
+            print(f"\n   2️⃣  CONSIDER 5 GHz BAND")
+            print(f"      WHY: 5 GHz has more channels and less interference")
+            print(f"      RECOMMENDED: Channel {ch}")
+            print(f"      BENEFITS: Faster speeds, less congestion, more channels")
+            print(f"      ACTION: Enable 5 GHz on your router or connect to 5 GHz network")
+        
+        if impact['level'] in ['HIGH', 'CRITICAL']:
+            print(f"\n   ⚠️  HIGH INTERFERENCE DETECTED")
+            print(f"      IMPACT: Slow speeds, dropped connections, poor streaming")
+            print(f"      SOLUTION: Change Wi-Fi channel or switch to 5 GHz")
+        
+        if networks:
+            congested_chs = [ch for ch, data in congestion.items() if data.get('congestion_level') in ['HIGH', 'CRITICAL']]
+            if congested_chs:
+                print(f"\n   🚫 AVOID THESE CHANNELS:")
+                for ch in congested_chs:
+                    count = congestion[ch].get('network_count', 0)
+                    print(f"      Channel {ch}: {count} network(s) overlapping")
+        
+        print("\n📋 QUICK GUIDE:")
+        print("   • Channel 1, 6, 11 are the only non-overlapping 2.4 GHz channels")
+        print("   • Lower interference = Faster speeds = Better experience")
+        print("   • 5 GHz is faster but has shorter range")
         
         print("\n" + "=" * 60)
 
