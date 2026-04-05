@@ -210,7 +210,7 @@ class CorrelationEngine:
                     'action': 'Check interference levels and signal strength'
                 })
         
-        latency = performance_data.get('latency', {})
+        latency = performance_data.get('latency') or {}
         if latency.get('latency_avg', 0) > 50:
             insights.append({
                 'type': 'performance_alert',
