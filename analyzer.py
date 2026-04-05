@@ -167,18 +167,16 @@ class WiFiInterferenceAnalyzer:
         
         probed = analysis['scan_data'].get('probed_networks', [])
         if probed:
-            all_ssids = set()
-            for item in probed:
-                for ssid in item.get('probed_ssids', []):
+            print("\n   🔍 Probed Networks (from device searches):")
+            print(f"   {'Device MAC':<19} {'SSID':<30}")
+            print(f"   {'-'*50}")
+            for item in probed[:15]:
+                device_mac = item.get('device_mac', 'N/A')
+                ssids = item.get('probed_ssids', [])
+                for ssid in ssids:
                     ssid = ssid.strip()
                     if ssid:
-                        all_ssids.add(ssid)
-            if all_ssids:
-                print("\n   🔍 Probed Networks (from device searches):")
-                print(f"   {'Network Name (SSID)':<30}")
-                print(f"   {'-'*30}")
-                for ssid in sorted(all_ssids)[:15]:
-                    print(f"   {ssid:<30}")
+                        print(f"   {device_mac:<19} {ssid:<30}")
         
         print("\n📊 Interference Impact:")
         impact = analysis['correlation_data']['interference_impact']
