@@ -909,7 +909,7 @@ DASHBOARD_HTML = '''
                 <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
             </div>
             <div class="status-item">
-                <span>Interface: wlan1</span>
+                <span>Interface: wlan1 (TP-Link Archer T2U Plus)</span>
             </div>
         </div>
     </div>
