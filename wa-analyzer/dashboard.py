@@ -75,11 +75,12 @@ latest_analysis = {
 }
 
 analyzer_running = False
+analyzer_paused = False
 analyzer_interface = 'wlan1'
 
 def run_analysis():
     """Run continuous analysis in background"""
-    global latest_analysis, analyzer_running
+    global latest_analysis, analyzer_running, analyzer_paused
     
     scanner = WiFiScanner(analyzer_interface)
     detector = InterferenceDetector()
@@ -88,38 +89,43 @@ def run_analysis():
     
     while analyzer_running:
         try:
-            scan_result = scanner.scan_networks()
-            networks = scan_result.get('networks', [])
-            probed = scan_result.get('probed_networks', [])
-            
-            connected = []
-            searching = []
-            for item in probed:
-                conn_bssid = item.get('connected_bssid', '')
-                if conn_bssid and ':' in conn_bssid:
-                    connected.append(item)
-                else:
-                    searching.append(item)
-            
-            interference_data = detector.analyze(networks)
-            performance_data = tester.run_all_tests()
-            
-            correlation = correlator.correlate(
-                {'networks': networks, 'network_count': len(networks)},
-                performance_data,
-                interference_data
-            )
-            
-            latest_analysis = {
-                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'networks': networks,
-                'connected_devices': connected,
-                'searching_devices': searching,
-                'interference': correlation.get('interference_impact', {}),
-                'recommendations': interference_data.get('recommendations', {}),
-                'channel_congestion': interference_data.get('channel_congestion', {})
-            }
-            
+            if not analyzer_paused:
+                scan_result = scanner.scan_networks()
+                networks = scan_result.get('networks', [])
+                probed = scan_result.get('probed_networks', [])
+                
+                connected = []
+                searching = []
+                for item in probed:
+                    conn_bssid = item.get('connected_bssid', '')
+                    if conn_bssid and ':' in conn_bssid:
+                        connected.append(item)
+                    else:
+                        searching.append(item)
+                
+                interference_data = detector.analyze(networks)
+                performance_data = tester.run_all_tests()
+                
+                correlation = correlator.correlate(
+                    {'networks': networks, 'network_count': len(networks)},
+                    performance_data,
+                    interference_data
+                )
+                
+                latest_analysis = {
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'networks': networks,
+                    'connected_devices': connected,
+                    'searching_devices': searching,
+                    'interference': correlation.get('interference_impact', {}),
+                    'recommendations': interference_data.get('recommendations', {}),
+                    'channel_congestion': interference_data.get('channel_congestion', {}),
+                    'paused': False
+                }
+            else:
+                latest_analysis['timestamp'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                latest_analysis['paused'] = True
+                
         except Exception as e:
             latest_analysis['error'] = str(e)
         
@@ -149,6 +155,31 @@ def get_interference():
         'interference': latest_analysis.get('interference', {}),
         'congestion': latest_analysis.get('channel_congestion', {}),
         'recommendations': latest_analysis.get('recommendations', {})
+    })
+
+@app.route('/api/pause', methods=['POST'])
+@require_auth
+def pause_monitoring():
+    """Pause live monitoring"""
+    global analyzer_paused
+    analyzer_paused = True
+    return jsonify({'status': 'paused', 'message': 'Monitoring paused'})
+
+@app.route('/api/resume', methods=['POST'])
+@require_auth
+def resume_monitoring():
+    """Resume live monitoring"""
+    global analyzer_paused
+    analyzer_paused = False
+    return jsonify({'status': 'running', 'message': 'Monitoring resumed'})
+
+@app.route('/api/status')
+@require_auth
+def get_status():
+    """Get monitoring status"""
+    return jsonify({
+        'running': analyzer_running,
+        'paused': analyzer_paused
     })
 
 @app.route('/api/export/csv')
@@ -503,17 +534,78 @@ DASHBOARD_HTML = '''
             background: rgba(0,0,0,0.3);
             padding: 20px 40px;
             border-bottom: 2px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .header h1 {
+        .header-left h1 {
             color: #00d9ff;
             font-size: 28px;
         }
         
-        .header .subtitle {
+        .header-left .subtitle {
             color: #888;
             font-size: 14px;
             margin-top: 5px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: #0f3460;
+            color: #00d9ff;
+            border: 1px solid #00d9ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: #00d9ff;
+            color: #1a1a2e;
+        }
+        
+        .control-btn.pause-btn {
+            background: #ff9800;
+            border-color: #ff9800;
+            color: #fff;
+        }
+        
+        .control-btn.pause-btn:hover {
+            background: #f57c00;
+            border-color: #f57c00;
+        }
+        
+        .control-btn.resume-btn {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: #fff;
+        }
+        
+        .control-btn.resume-btn:hover {
+            background: #388e3c;
+            border-color: #388e3c;
+        }
+        
+        .control-btn.logout-btn {
+            background: #f44336;
+            border-color: #f44336;
+            color: #fff;
+        }
+        
+        .control-btn.logout-btn:hover {
+            background: #d32f2f;
+            border-color: #d32f2f;
         }
         
         .status-bar {
@@ -523,6 +615,12 @@ DASHBOARD_HTML = '''
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #0f3460;
+        }
+        
+        .status-left {
+            display: flex;
+            gap: 20px;
+            align-items: center;
         }
         
         .status-item {
@@ -539,9 +637,46 @@ DASHBOARD_HTML = '''
             animation: pulse 2s infinite;
         }
         
+        .status-dot.paused {
+            background: #ff9800;
+            animation: none;
+        }
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+        
+        .status-label {
+            font-size: 14px;
+        }
+        
+        .status-label.paused {
+            color: #ff9800;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .export-btn {
+            background: #0f3460;
+            color: #00d9ff;
+            border: 1px solid #00d9ff;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #00d9ff;
+            color: #1a1a2e;
         }
         
         .main-content {
@@ -596,27 +731,6 @@ DASHBOARD_HTML = '''
             color: #888;
             margin-top: 5px;
         }
-        
-        .interference-gauge {
-            width: 100%;
-            height: 30px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-        
-        .interference-bar {
-            height: 100%;
-            border-radius: 15px;
-            transition: width 0.5s ease;
-        }
-        
-        .level-minimal { background: linear-gradient(90deg, #00ff00, #00cc00); }
-        .level-low { background: linear-gradient(90deg, #88ff00, #66cc00); }
-        .level-medium { background: linear-gradient(90deg, #ffcc00, #ff9900); }
-        .level-high { background: linear-gradient(90deg, #ff6600, #ff3300); }
-        .level-critical { background: linear-gradient(90deg, #ff0000, #cc0000); }
         
         .network-list {
             max-height: 300px;
@@ -717,11 +831,6 @@ DASHBOARD_HTML = '''
             grid-column: 1 / -1;
         }
         
-        .timestamp {
-            color: #666;
-            font-size: 12px;
-        }
-        
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -742,71 +851,74 @@ DASHBOARD_HTML = '''
             color: #888;
         }
         
-        .loading::after {
-            content: '';
-            animation: dots 1.5s infinite;
+        .paused-banner {
+            background: rgba(255,152,0,0.2);
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
         }
         
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
+        .paused-banner.visible {
+            display: block;
         }
         
-        .export-buttons {
-            display: flex;
-            gap: 10px;
+        .paused-banner h3 {
+            color: #ff9800;
+            margin-bottom: 5px;
         }
         
-        .export-btn {
-            background: #0f3460;
-            color: #00d9ff;
-            border: 1px solid #00d9ff;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
+        .paused-banner p {
+            color: #888;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.3s;
-        }
-        
-        .export-btn:hover {
-            background: #00d9ff;
-            color: #1a1a2e;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📡 WA-CPE Wi-Fi Analyzer Dashboard</h1>
-        <div class="subtitle">Real-time Wi-Fi Interference Analysis</div>
+        <div class="header-left">
+            <h1>📡 WA-CPE Wi-Fi Analyzer</h1>
+            <div class="subtitle">Real-time Wi-Fi Interference Analysis</div>
+        </div>
+        <div class="header-right">
+            <button class="control-btn" onclick="exportData('csv')">
+                📥 Export CSV
+            </button>
+            <button class="control-btn" onclick="exportData('html')">
+                📄 Export HTML
+            </button>
+            <button class="control-btn pause-btn" id="pauseBtn" onclick="togglePause()">
+                ⏸️ Pause
+            </button>
+            <button class="control-btn logout-btn" onclick="window.location.href='/logout'">
+                🚪 Logout
+            </button>
+        </div>
     </div>
     
     <div class="status-bar">
-        <div class="status-item">
-            <div class="status-dot"></div>
-            <span>Live Monitoring Active</span>
-        </div>
-        <div class="status-item">
-            <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
-        </div>
-        <div class="status-item">
-            <span>Interface: wlan1</span>
-        </div>
-        <div class="export-buttons">
-            <button class="export-btn" onclick="exportData('csv')">
-                📥 Export CSV
-            </button>
-            <button class="export-btn" onclick="exportData('html')">
-                📄 Export HTML Report
-            </button>
+        <div class="status-left">
+            <div class="status-item">
+                <div class="status-dot" id="statusDot"></div>
+                <span class="status-label" id="statusLabel">Live Monitoring Active</span>
+            </div>
+            <div class="status-item">
+                <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
+            </div>
+            <div class="status-item">
+                <span>Interface: wlan1</span>
+            </div>
         </div>
     </div>
     
     <div class="main-content">
         <div class="card full-width">
+            <div class="paused-banner" id="pausedBanner">
+                <h3>⏸️ Monitoring Paused</h3>
+                <p>Data is frozen. Click Resume to continue live updates.</p>
+            </div>
             <div class="card-title">
                 <span class="icon">📊</span>
                 Network Statistics
@@ -879,10 +991,61 @@ DASHBOARD_HTML = '''
     </div>
     
     <script>
+        let isPaused = false;
+        let updateInterval = null;
+        
+        function togglePause() {
+            const endpoint = isPaused ? '/api/resume' : '/api/pause';
+            fetch(endpoint, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    isPaused = !isPaused;
+                    updatePauseUI();
+                })
+                .catch(error => {
+                    console.error('Error toggling pause:', error);
+                });
+        }
+        
+        function updatePauseUI() {
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusDot = document.getElementById('statusDot');
+            const statusLabel = document.getElementById('statusLabel');
+            const pausedBanner = document.getElementById('pausedBanner');
+            
+            if (isPaused) {
+                pauseBtn.innerHTML = '▶️ Resume';
+                pauseBtn.classList.remove('pause-btn');
+                pauseBtn.classList.add('resume-btn');
+                statusDot.classList.add('paused');
+                statusLabel.textContent = 'Monitoring Paused';
+                statusLabel.classList.add('paused');
+                pausedBanner.classList.add('visible');
+                if (updateInterval) {
+                    clearInterval(updateInterval);
+                    updateInterval = null;
+                }
+            } else {
+                pauseBtn.innerHTML = '⏸️ Pause';
+                pauseBtn.classList.remove('resume-btn');
+                pauseBtn.classList.add('pause-btn');
+                statusDot.classList.remove('paused');
+                statusLabel.textContent = 'Live Monitoring Active';
+                statusLabel.classList.remove('paused');
+                pausedBanner.classList.remove('visible');
+                updateDashboard();
+                updateInterval = setInterval(updateDashboard, 5000);
+            }
+        }
+        
         function updateDashboard() {
             fetch('/api/data')
                 .then(response => response.json())
                 .then(data => {
+                    if (data.paused === undefined) {
+                        data.paused = false;
+                    }
+                    
                     document.getElementById('lastUpdate').textContent = data.timestamp || '--:--:--';
                     document.getElementById('networkCount').textContent = data.networks ? data.networks.length : 0;
                     document.getElementById('connectedCount').textContent = data.connected_devices ? data.connected_devices.length : 0;
@@ -1027,18 +1190,19 @@ DASHBOARD_HTML = '''
             container.innerHTML = html;
         }
         
-        setInterval(updateDashboard, 5000);
-        updateDashboard();
-        
         function exportData(format) {
             const endpoint = format === 'csv' ? '/api/export/csv' : '/api/export/html';
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             const link = document.createElement('a');
             link.href = endpoint;
-            link.download = format === 'csv' ? 'wifi_analysis.csv' : 'wifi_analysis.html';
+            link.download = format === 'csv' ? `wifi_analysis_${timestamp}.csv` : `wifi_analysis_${timestamp}.html`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
+        
+        updateInterval = setInterval(updateDashboard, 5000);
+        updateDashboard();
     </script>
 </body>
 </html>
@@ -1046,10 +1210,11 @@ DASHBOARD_HTML = '''
 
 def start_dashboard(interface='wlan1', host='0.0.0.0', port=5000):
     """Start the web dashboard"""
-    global analyzer_interface, analyzer_running
+    global analyzer_interface, analyzer_running, analyzer_paused
     
     analyzer_interface = interface
     analyzer_running = True
+    analyzer_paused = False
     
     analysis_thread = threading.Thread(target=run_analysis, daemon=True)
     analysis_thread.start()
