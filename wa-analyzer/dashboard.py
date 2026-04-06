@@ -788,8 +788,9 @@ DASHBOARD_HTML = '''
         }
         
         .channel-number {
-            font-size: 10px;
-            color: #888;
+            font-size: 14px;
+            font-weight: bold;
+            color: #00d9ff;
             margin-bottom: 5px;
         }
         
@@ -1146,7 +1147,7 @@ DASHBOARD_HTML = '''
             for (let ch = 1; ch <= 13; ch++) {
                 const count = channelCounts[ch];
                 const height = Math.min(count * 20, 80);
-                const color = count >= 3 ? '#ff4444' : count >= 2 ? '#ffaa00' : count >= 1 ? '#00d9ff' : '#333';
+                const color = count >= 3 ? '#ff4444' : count >= 2 ? '#ffaa00' : count >= 1 ? '#00d9ff' : '#1a5a6e';
                 html += `
                     <div class="channel-bar">
                         <div class="channel-number">${ch}</div>
