@@ -1,0 +1,74 @@
+# WA-CPE Wi-Fi Analyzer Setup Script
+# Run this script to set up and start the Wi-Fi Analyzer Dashboard
+
+echo "=============================================="
+echo "WA-CPE Wi-Fi Analyzer Setup"
+echo "=============================================="
+echo ""
+
+# Kill any existing dashboard
+echo "[1/6] Checking for existing processes..."
+sudo fuser -k 5000/tcp 2>/dev/null
+sudo pkill -f dashboard.py 2>/dev/null
+echo "   Done"
+
+# Pull latest code
+echo ""
+echo "[2/6] Updating code from GitHub..."
+cd ~/WA-Repo
+git pull
+echo "   Done"
+
+# Create systemd service
+echo ""
+echo "[3/6] Creating systemd service..."
+sudo tee /etc/systemd/system/wifi-analyzer.service > /dev/null <<EOF
+[Unit]
+Description=WA-CPE Wi-Fi Analyzer Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/wa-pi/WA-Repo
+ExecStart=/usr/bin/python3 /home/wa-pi/WA-Repo/dashboard.py -i wlan1
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+echo "   Created wifi-analyzer.service"
+
+# Enable service
+echo ""
+echo "[4/6] Enabling auto-start on boot..."
+sudo systemctl daemon-reload
+sudo systemctl enable wifi-analyzer
+echo "   Enabled"
+
+# Start service
+echo ""
+echo "[5/6] Starting dashboard service..."
+sudo systemctl start wifi-analyzer
+echo "   Started"
+
+# Check status
+echo ""
+echo "[6/6] Checking service status..."
+sudo systemctl status wifi-analyzer | head -10
+
+echo ""
+echo "=============================================="
+echo "Setup Complete!"
+echo "=============================================="
+echo ""
+echo "Dashboard URL: http://192.168.0.150:5000"
+echo "Login: admin / Logmein@1"
+echo ""
+echo "Useful Commands:"
+echo "  sudo systemctl status wifi-analyzer  - Check status"
+echo "  sudo systemctl restart wifi-analyzer - Restart"
+echo "  sudo systemctl stop wifi-analyzer    - Stop"
+echo "  journalctl -u wifi-analyzer -f      - View logs"
+echo ""
