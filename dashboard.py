@@ -437,6 +437,81 @@ def export_html():
         headers={'Content-Disposition': f'attachment; filename=wifi_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.html'}
     )
 
+@app.route('/api/export/txt')
+@require_auth
+def export_txt():
+    """Export data as TXT report"""
+    timestamp = latest_analysis.get('timestamp') or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    interf = latest_analysis.get('interference', {})
+    networks = latest_analysis.get('networks', [])
+    connected = latest_analysis.get('connected_devices', [])
+    searching = latest_analysis.get('searching_devices', [])
+    
+    txt = f'''
+================================================================================
+                    WA-CPE WI-FI ANALYZER REPORT
+================================================================================
+Generated: {timestamp}
+Interface: wlan1 (TP-Link Archer T2U Plus)
+================================================================================
+
+INTERFERENCE SUMMARY
+-------------------
+Level: {interf.get('level', 'N/A')}
+Score: {interf.get('score', 0)}/15
+
+STATISTICS
+----------
+Total Networks Detected: {len(networks)}
+Connected Devices: {len(connected)}
+Searching Devices: {len(searching)}
+
+'''
+    
+    txt += 'DETECTED NETWORKS\n'
+    txt += '-' * 80 + '\n'
+    txt += f"{'SSID':<25} {'BSSID':<18} {'Ch':<4} {'Band':<8} {'RSSI':<8}\n"
+    txt += '-' * 80 + '\n'
+    for net in networks:
+        ssid = (net.get('ssid') or '<Hidden>')[:24]
+        bssid = net.get('bssid', '')[:17]
+        ch = str(net.get('channel', '?'))
+        band = net.get('band', '')[:7]
+        rssi = str(net.get('rssi', '?'))
+        txt += f"{ssid:<25} {bssid:<18} {ch:<4} {band:<8} {rssi:<8}\n"
+    
+    txt += '''
+CONNECTED DEVICES
+'''
+    txt += '-' * 80 + '\n'
+    for dev in connected:
+        txt += f"MAC: {dev.get('device_mac', 'N/A')}\n"
+        txt += f"  Manufacturer: {dev.get('manufacturer', 'Unknown')}\n"
+        txt += f"  Connected to: {dev.get('connected_bssid', 'N/A')}\n"
+        txt += f"  Signal: {dev.get('signal', 'N/A')} dBm\n"
+        txt += '\n'
+    
+    txt += 'SEARCHING DEVICES\n'
+    txt += '-' * 80 + '\n'
+    for dev in searching:
+        txt += f"MAC: {dev.get('device_mac', 'N/A')}\n"
+        txt += f"  Manufacturer: {dev.get('manufacturer', 'Unknown')}\n"
+        txt += f"  Signal: {dev.get('signal', 'N/A')} dBm\n"
+        txt += f"  Searching for: {', '.join(dev.get('probed_ssids', []))}\n"
+        txt += '\n'
+    
+    txt += f'''
+================================================================================
+                           END OF REPORT
+================================================================================
+'''
+    
+    return Response(
+        txt,
+        mimetype='text/plain',
+        headers={'Content-Disposition': f'attachment; filename=wifi_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'}
+    )
+
 LOGIN_HTML = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -890,6 +965,9 @@ DASHBOARD_HTML = '''
             <button class="control-btn" onclick="exportData('html')">
                 📄 Export HTML
             </button>
+            <button class="control-btn" onclick="exportData('txt')">
+                📝 Export TXT
+            </button>
             <button class="control-btn pause-btn" id="pauseBtn" onclick="togglePause()">
                 ⏸️ Pause
             </button>
@@ -1192,11 +1270,20 @@ DASHBOARD_HTML = '''
         }
         
         function exportData(format) {
-            const endpoint = format === 'csv' ? '/api/export/csv' : '/api/export/html';
+            let endpoint;
+            if (format === 'csv') endpoint = '/api/export/csv';
+            else if (format === 'html') endpoint = '/api/export/html';
+            else endpoint = '/api/export/txt';
+            
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            let filename;
+            if (format === 'csv') filename = `wifi_analysis_${timestamp}.csv`;
+            else if (format === 'html') filename = `wifi_analysis_${timestamp}.html`;
+            else filename = `wifi_analysis_${timestamp}.txt`;
+            
             const link = document.createElement('a');
             link.href = endpoint;
-            link.download = format === 'csv' ? `wifi_analysis_${timestamp}.csv` : `wifi_analysis_${timestamp}.html`;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
