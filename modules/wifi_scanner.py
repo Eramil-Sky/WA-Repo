@@ -31,7 +31,7 @@ class WiFiScanner:
             stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
         )
         
-        time.sleep(15)
+        time.sleep(30)
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
         try:
             proc.terminate()
@@ -61,7 +61,7 @@ class WiFiScanner:
                 os.remove(f)
         
         channels_2g = [1, 6, 11, 3, 8, 13]
-        channels_5g = [36, 52, 100, 149]
+        channels_5g = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165]
         all_channels = channels_2g + channels_5g
         
         bssid_channels = {}
@@ -76,7 +76,7 @@ class WiFiScanner:
                     ['sudo', 'airodump-ng', '--channel', str(ch), '-o', 'csv', '-w', '/tmp/ch_scan', self.interface],
                     stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
                 )
-                time.sleep(3)
+                time.sleep(5)
                 subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
                 try:
                     proc.terminate()
