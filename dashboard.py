@@ -593,10 +593,8 @@ def run_analysis():
         scan_counter += 1
         
         if scan_counter % 20 == 0:
-            import subprocess
             subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
             subprocess.run(['sudo', 'modprobe', '-r', '88XXau'], stderr=subprocess.DEVNULL)
-            import time
             time.sleep(2)
             subprocess.run(['sudo', 'modprobe', '88XXau'], stderr=subprocess.DEVNULL)
             time.sleep(3)
