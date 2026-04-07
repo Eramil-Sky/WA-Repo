@@ -12,6 +12,7 @@ import os
 import sys
 import csv
 import io
+import signal
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -604,19 +605,7 @@ def run_analysis():
         
         try:
             if not analyzer_paused:
-                import signal
-                
-                scan_result = {'networks': [], 'probed_networks': []}
-                scan_complete = [False]
-                
-                def timeout_handler(signum, frame):
-                    scan_complete[0] = True
-                
-                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(12)
                 scan_result = scanner.fast_scan()
-                signal.alarm(0)
-                signal.signal(signal.SIGALRM, old_handler)
                 
                 networks = scan_result.get('networks', [])
                 probed = scan_result.get('probed_networks', [])
