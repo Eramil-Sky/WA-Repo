@@ -719,6 +719,38 @@ def get_status():
         'paused': analyzer_paused
     })
 
+@app.route('/api/latency')
+@require_auth
+def get_latency():
+    """API endpoint for latency/pings"""
+    tester = PerformanceTester()
+    router_ip = '192.168.0.1'
+    internet_ip = '8.8.8.8'
+    
+    router_latency = tester.test_latency(router_ip, count=5)
+    internet_latency = tester.test_latency(internet_ip, count=5)
+    
+    return jsonify({
+        'router': {
+            'target': router_ip,
+            'label': 'Router',
+            'avg': router_latency.get('latency_avg'),
+            'min': router_latency.get('latency_min'),
+            'max': router_latency.get('latency_max'),
+            'packet_loss': router_latency.get('packet_loss', 0),
+            'error': router_latency.get('error')
+        },
+        'internet': {
+            'target': internet_ip,
+            'label': 'Internet',
+            'avg': internet_latency.get('latency_avg'),
+            'min': internet_latency.get('latency_min'),
+            'max': internet_latency.get('latency_max'),
+            'packet_loss': internet_latency.get('packet_loss', 0),
+            'error': internet_latency.get('error')
+        }
+    })
+
 @app.route('/api/export/csv')
 @require_auth
 def export_csv():
@@ -1359,6 +1391,60 @@ DASHBOARD_HTML = '''
             margin-top: 5px;
         }
         
+        .latency-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .latency-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .latency-card:first-child {
+            border-color: #39ff14;
+        }
+        
+        .latency-card:last-child {
+            border-color: #00d9ff;
+        }
+        
+        .latency-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .latency-card:first-child .latency-header {
+            color: #39ff14;
+        }
+        
+        .latency-card:last-child .latency-header {
+            color: #00d9ff;
+        }
+        
+        .latency-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .latency-value.good { color: #39ff14; }
+        .latency-value.medium { color: #ffaa00; }
+        .latency-value.bad { color: #ff4444; }
+        .latency-value.error { color: #888; }
+        
+        .latency-detail {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
         .network-list {
             overflow: visible;
         }
@@ -1768,6 +1854,19 @@ DASHBOARD_HTML = '''
                 </div>
             </div>
             
+            <div class="latency-grid">
+                <div class="latency-card" id="routerPing">
+                    <div class="latency-header">🏠 Router</div>
+                    <div class="latency-value" id="routerLatency">--</div>
+                    <div class="latency-detail" id="routerDetail">192.168.0.1</div>
+                </div>
+                <div class="latency-card" id="internetPing">
+                    <div class="latency-header">🌐 Internet</div>
+                    <div class="latency-value" id="internetLatency">--</div>
+                    <div class="latency-detail" id="internetDetail">8.8.8.8</div>
+                </div>
+            </div>
+            
             <div class="card-title">
                 <span class="icon">📺</span>
                 Channel Heatmap (2.4 GHz)
@@ -1900,6 +1999,47 @@ DASHBOARD_HTML = '''
                 .catch(error => {
                     console.error('Error fetching data:', error);
                 });
+            
+            updateLatency();
+        }
+        
+        function updateLatency() {
+            fetch('/api/latency')
+                .then(response => response.json())
+                .then(data => {
+                    updateLatencyCard('router', data.router);
+                    updateLatencyCard('internet', data.internet);
+                })
+                .catch(error => {
+                    console.error('Error fetching latency:', error);
+                });
+        }
+        
+        function updateLatencyCard(type, data) {
+            const valueEl = document.getElementById(type + 'Latency');
+            const detailEl = document.getElementById(type + 'Detail');
+            
+            if (data.error) {
+                valueEl.textContent = 'N/A';
+                valueEl.className = 'latency-value error';
+                detailEl.textContent = data.target + ' - Error';
+            } else if (data.avg !== null && data.avg !== undefined) {
+                const avg = data.avg.toFixed(1);
+                valueEl.textContent = avg + ' ms';
+                detailEl.textContent = data.target + ' | Loss: ' + data.packet_loss + '%';
+                
+                if (data.avg < 50) {
+                    valueEl.className = 'latency-value good';
+                } else if (data.avg < 150) {
+                    valueEl.className = 'latency-value medium';
+                } else {
+                    valueEl.className = 'latency-value bad';
+                }
+            } else {
+                valueEl.textContent = '--';
+                valueEl.className = 'latency-value';
+                detailEl.textContent = data.target;
+            }
         }
         
         function updateNetworkList(networks) {
