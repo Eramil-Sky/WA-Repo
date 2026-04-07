@@ -1376,7 +1376,7 @@ DASHBOARD_HTML = '''
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            min-height: 250px;
+            max-height: 400px;
         }
         
         .net-24 {
@@ -2019,7 +2019,7 @@ DASHBOARD_HTML = '''
                 }
             });
             
-            let html = '<div style="margin-bottom:15px;"><div style="font-size:12px;color:#ff9800;margin-bottom:8px;font-weight:bold;">📶 2.4 GHz</div><div style="display:flex;gap:4px;">';
+            let html = '<div style="border:2px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;"><div style="font-size:12px;color:#ff9800;margin-bottom:8px;font-weight:bold;">2.4 GHz</div><div style="display:flex;gap:4px;">';
             for (let ch = 1; ch <= 13; ch++) {
                 const count = channelCounts24[ch];
                 const height = Math.min(count * 15, 60);
@@ -2033,7 +2033,7 @@ DASHBOARD_HTML = '''
             }
             html += '</div></div>';
             
-            html += '<div><div style="font-size:12px;color:#00d9ff;margin-bottom:8px;font-weight:bold;">🚀 5 GHz</div><div style="display:flex;gap:3px;flex-wrap:wrap;">';
+            html += '<div style="border:2px solid #00d9ff;border-radius:8px;padding:10px;"><div style="font-size:12px;color:#00d9ff;margin-bottom:8px;font-weight:bold;">5 GHz</div><div style="display:flex;gap:3px;flex-wrap:wrap;">';
             channels5.forEach(ch => {
                 const count = channelCounts5[ch];
                 const color = count >= 3 ? '#ff4444' : count >= 2 ? '#ffaa00' : count >= 1 ? '#00d9ff' : '#1a5a6e';
