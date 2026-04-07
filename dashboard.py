@@ -1739,9 +1739,6 @@ DASHBOARD_HTML = '''
             <button class="control-btn" onclick="exportData('html')">
                 📄 Export HTML
             </button>
-            <button class="control-btn" onclick="exportData('txt')">
-                📝 Export TXT
-            </button>
             <button class="control-btn pause-btn" id="pauseBtn" onclick="togglePause()">
                 ⏸️ Pause
             </button>
