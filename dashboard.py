@@ -1175,11 +1175,11 @@ DASHBOARD_HTML = '''
             container.innerHTML = devices.map(dev => `
                 <div class="device-item">
                     <div>
-                        <strong>${dev.manufacturer || 'Unknown'}</strong>
-                        <div style="font-size:11px;color:#888">${dev.device_mac || ''}</div>
+                        <strong>${dev.mac || 'Unknown'}</strong>
+                        <div style="font-size:11px;color:#888">${dev.manufacturer || 'Unknown'}</div>
                     </div>
                     <div style="text-align:right">
-                        <div>${dev.connected_bssid || ''}</div>
+                        <div>${dev.connected_to || ''}</div>
                         <div style="font-size:11px;color:#888">RSSI: ${dev.signal || '?'}</div>
                     </div>
                 </div>
@@ -1196,8 +1196,8 @@ DASHBOARD_HTML = '''
             container.innerHTML = devices.map(dev => `
                 <div class="device-item">
                     <div>
-                        <strong>${dev.manufacturer || 'Unknown'}</strong>
-                        <div style="font-size:11px;color:#888">${dev.device_mac || ''}</div>
+                        <strong>${dev.mac || 'Unknown'}</strong>
+                        <div style="font-size:11px;color:#888">${dev.manufacturer || 'Unknown'}</div>
                     </div>
                     <div style="text-align:right">
                         <div>${(dev.probed_ssids || []).join(', ')}</div>

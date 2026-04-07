@@ -1818,15 +1818,15 @@ class WiFiInterferenceAnalyzer:
         
         if connected_devices:
             print("\n   📱 CONNECTED DEVICES:")
-            print(f"   {'Device':<15} {'RSSI':<6} {'Manufacturer':<15} {'Connected To':<19}")
-            print(f"   {'-'*70}")
+            print(f"   {'Device MAC':<18} {'RSSI':<6} {'Manufacturer':<15} {'Connected To':<19}")
+            print(f"   {'-'*75}")
             seen_bssids = set()
             for item in connected_devices:
-                device = f"{item['manufacturer']:<15}"
+                device_mac = item.get('mac', 'Unknown')[:17]
                 rssi = f"{item['signal']:<6}"
                 mfg = f"{item['manufacturer']:<15}"
                 bssid = item.get('connected_to', 'N/A')[:18]
-                print(f"   {device:<15} {rssi:<6} {mfg:<15} {bssid:<19}")
+                print(f"   {device_mac:<18} {rssi:<6} {mfg:<15} {bssid:<19}")
                 if item['connected_to']:
                     seen_bssids.add(item['connected_to'])
             
@@ -1838,16 +1838,16 @@ class WiFiInterferenceAnalyzer:
         
         if searching_devices:
             print("\n   🔍 DEVICES SEARCHING FOR WI-FI:")
-            print(f"   {'Device':<15} {'RSSI':<6} {'Manufacturer':<15} {'Searching For':<25}")
-            print(f"   {'-'*70}")
+            print(f"   {'Device MAC':<18} {'RSSI':<6} {'Manufacturer':<15} {'Searching For':<25}")
+            print(f"   {'-'*75}")
             seen_ssids = set()
             for item in searching_devices:
-                device = f"{item['manufacturer']:<15}"
+                device_mac = item.get('mac', 'Unknown')[:17]
                 rssi = f"{item['signal']:<6}"
                 mfg = f"{item['manufacturer']:<15}"
                 for ssid in item.get('searching', []):
                     if ssid not in seen_ssids:
-                        print(f"   {device:<15} {rssi:<6} {mfg:<15} {ssid:<25}")
+                        print(f"   {device_mac:<18} {rssi:<6} {mfg:<15} {ssid:<25}")
                         seen_ssids.add(ssid)
         
         print("\n📊 Interference Impact:")
