@@ -604,7 +604,23 @@ def run_analysis():
         
         try:
             if not analyzer_paused:
-                scan_result = scanner.fast_scan()
+                import signal
+                import functools
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("Scan timed out")
+                
+                scan_result = {'networks': [], 'probed_networks': []}
+                try:
+                    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(12)
+                    scan_result = scanner.fast_scan()
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+                except (TimeoutError, Exception):
+                    signal.alarm(0)
+                    pass
+                
                 networks = scan_result.get('networks', [])
                 probed = scan_result.get('probed_networks', [])
                 
