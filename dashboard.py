@@ -1371,7 +1371,7 @@ DASHBOARD_HTML = '''
         
         .net-box {
             flex: 1;
-            border: 2px solid;
+            border: 3px solid;
             border-radius: 10px;
             overflow: hidden;
             max-height: 280px;
@@ -1391,34 +1391,36 @@ DASHBOARD_HTML = '''
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 15px;
+            padding: 12px 15px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 15px;
             flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .net-24 .net-box-header {
-            background: rgba(255,152,0,0.15);
+            background: rgba(255,152,0,0.25);
             color: #ff9800;
         }
         
         .net-5 .net-box-header {
-            background: rgba(0,217,255,0.15);
+            background: rgba(0,217,255,0.25);
             color: #00d9ff;
         }
         
         .net-count {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 12px;
+            background: rgba(255,255,255,0.25);
+            padding: 3px 14px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
         }
         
         .net-box-content {
             overflow-y: auto;
             flex: 1;
-            padding: 5px;
+            padding: 8px;
         }
         
         .network-item {
@@ -1432,6 +1434,16 @@ DASHBOARD_HTML = '''
         
         .network-item:last-child {
             border-bottom: none;
+        }
+        
+        .network-details {
+            font-size: 13px;
+            color: #b388ff;
+        }
+        
+        .network-channel {
+            color: #39ff14;
+            font-weight: bold;
         }
         
         .network-info {
@@ -1488,8 +1500,8 @@ DASHBOARD_HTML = '''
         }
         
         .rec-content {
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 14px;
+            line-height: 1.6;
         }
         
         .rec-section {
@@ -1512,22 +1524,22 @@ DASHBOARD_HTML = '''
         
         .rec-status-item {
             background: rgba(255,255,255,0.05);
-            padding: 8px 15px;
+            padding: 10px 18px;
             border-radius: 8px;
             flex: 1;
             min-width: 150px;
         }
         
         .rec-status-label {
-            font-size: 11px;
+            font-size: 12px;
             color: #888;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         
         .rec-status-value {
             font-weight: bold;
-            font-size: 15px;
+            font-size: 17px;
         }
         
         .rec-status-value.critical { color: #ff4444; }
@@ -1535,52 +1547,40 @@ DASHBOARD_HTML = '''
         .rec-status-value.medium { color: #ffeb3b; }
         .rec-status-value.low { color: #4caf50; }
         
-        .rec-channels {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .rec-channel {
-            background: rgba(255,255,255,0.1);
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-        }
-        
         .rec-action {
             background: rgba(0,217,255,0.1);
-            border-left: 3px solid #00d9ff;
-            padding: 10px 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 10px;
+            border-left: 4px solid #00d9ff;
+            padding: 12px 18px;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 12px;
         }
         
         .rec-action-title {
             font-weight: bold;
             color: #00d9ff;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-size: 15px;
         }
         
         .rec-action-detail {
-            color: #aaa;
-            font-size: 12px;
-            margin-left: 24px;
+            color: #ccc;
+            font-size: 13px;
+            margin-left: 28px;
         }
         
         .rec-scale {
             display: flex;
-            gap: 5px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         
         .rec-scale-item {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 4px;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
             white-space: nowrap;
         }
         
@@ -1590,15 +1590,15 @@ DASHBOARD_HTML = '''
         .rec-scale-item.red { background: rgba(255,68,68,0.2); color: #ff4444; }
         
         .rec-guide {
-            font-size: 11px;
-            color: #888;
-            padding: 8px 12px;
+            font-size: 12px;
+            color: #999;
+            padding: 10px 15px;
             background: rgba(255,255,255,0.03);
-            border-radius: 6px;
+            border-radius: 8px;
         }
         
         .rec-guide-item {
-            margin-bottom: 3px;
+            margin-bottom: 4px;
         }
         
         .rec-guide-item:last-child {
@@ -1920,7 +1920,7 @@ DASHBOARD_HTML = '''
                     <div class="network-item">
                         <div class="network-info">
                             <div class="network-name">${net.ssid || '<Hidden>'}</div>
-                            <div class="network-details">${net.bssid} | Ch ${net.channel || '?'}</div>
+                            <div class="network-details">${net.bssid} | <span class="network-channel">Ch ${net.channel || '?'}</span></div>
                         </div>
                         <div class="network-signal">
                             <div class="signal-strength">${net.rssi || '?'}</div>
@@ -1937,7 +1937,7 @@ DASHBOARD_HTML = '''
                     <div class="network-item">
                         <div class="network-info">
                             <div class="network-name">${net.ssid || '<Hidden>'}</div>
-                            <div class="network-details">${net.bssid} | Ch ${net.channel || '?'}</div>
+                            <div class="network-details">${net.bssid} | <span class="network-channel">Ch ${net.channel || '?'}</span></div>
                         </div>
                         <div class="network-signal">
                             <div class="signal-strength">${net.rssi || '?'}</div>
@@ -2074,19 +2074,6 @@ DASHBOARD_HTML = '''
                 }
                 
                 html += '</div>';
-            }
-            
-            if (Object.keys(congestion).length > 0) {
-                const congested = Object.entries(congestion).filter(([ch, data]) => data.congestion_level === 'HIGH' || data.congestion_level === 'CRITICAL');
-                if (congested.length > 0) {
-                    html += '<div class="rec-section">';
-                    html += '<div style="font-weight:bold;color:#ff4444;margin-bottom:10px;">🚫 AVOID CONGESTED CHANNELS</div>';
-                    html += '<div class="rec-channels">';
-                    congested.forEach(([ch, data]) => {
-                        html += '<div class="rec-channel">' + ch + ': ' + data.count + ' networks</div>';
-                    });
-                    html += '</div></div>';
-                }
             }
             
             html += '<div class="rec-section">';
