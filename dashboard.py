@@ -1374,7 +1374,7 @@ DASHBOARD_HTML = '''
             border: 3px solid;
             border-radius: 10px;
             overflow: hidden;
-            max-height: 280px;
+            max-height: 400px;
             display: flex;
             flex-direction: column;
         }
