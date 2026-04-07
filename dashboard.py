@@ -1360,13 +1360,13 @@ DASHBOARD_HTML = '''
         }
         
         .network-list {
-            max-height: 500px;
-            overflow-y: auto;
+            overflow: visible;
         }
         
         .net-container {
             display: flex;
             gap: 12px;
+            height: 100%;
         }
         
         .net-box {
@@ -1374,9 +1374,9 @@ DASHBOARD_HTML = '''
             border: 3px solid;
             border-radius: 10px;
             overflow: hidden;
-            max-height: 400px;
             display: flex;
             flex-direction: column;
+            min-height: 250px;
         }
         
         .net-24 {
@@ -1420,7 +1420,6 @@ DASHBOARD_HTML = '''
         .net-box-content {
             overflow-y: auto;
             flex: 1;
-            min-height: 0;
             padding: 8px;
         }
         
@@ -1439,7 +1438,7 @@ DASHBOARD_HTML = '''
         
         .network-details {
             font-size: 13px;
-            color: #b388ff;
+            color: #E6E6FA;
         }
         
         .network-channel {
@@ -1997,33 +1996,56 @@ DASHBOARD_HTML = '''
         
         function updateHeatmap(networks) {
             const container = document.getElementById('heatmap');
-            const channelCounts = {};
             
+            const channelCounts24 = {};
             for (let ch = 1; ch <= 13; ch++) {
-                channelCounts[ch] = 0;
+                channelCounts24[ch] = 0;
             }
             
+            const channelCounts5 = {};
+            const channels5 = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165];
+            channels5.forEach(ch => channelCounts5[ch] = 0);
+            
             networks.forEach(net => {
-                if (net.band && net.band.includes('2.4') && net.channel) {
+                if (net.channel) {
                     const rssi = parseInt(net.rssi) || -100;
                     if (rssi > -90 && rssi < 0) {
-                        channelCounts[net.channel] = (channelCounts[net.channel] || 0) + 1;
+                        if (net.band && net.band.includes('2.4')) {
+                            channelCounts24[net.channel] = (channelCounts24[net.channel] || 0) + 1;
+                        } else if (net.band && net.band.includes('5')) {
+                            channelCounts5[net.channel] = (channelCounts5[net.channel] || 0) + 1;
+                        }
                     }
                 }
             });
             
-            let html = '';
+            let html = '<div style="margin-bottom:15px;"><div style="font-size:12px;color:#ff9800;margin-bottom:8px;font-weight:bold;">📶 2.4 GHz</div><div style="display:flex;gap:4px;">';
             for (let ch = 1; ch <= 13; ch++) {
-                const count = channelCounts[ch];
-                const height = Math.min(count * 20, 80);
+                const count = channelCounts24[ch];
+                const height = Math.min(count * 15, 60);
                 const color = count >= 3 ? '#ff4444' : count >= 2 ? '#ffaa00' : count >= 1 ? '#00d9ff' : '#1a5a6e';
                 html += `
                     <div class="channel-bar">
-                        <div class="channel-number">${ch}</div>
                         <div class="channel-fill" style="height:${height}px;background:${color}"></div>
+                        <div class="channel-number">${ch}</div>
                     </div>
                 `;
             }
+            html += '</div></div>';
+            
+            html += '<div><div style="font-size:12px;color:#00d9ff;margin-bottom:8px;font-weight:bold;">🚀 5 GHz</div><div style="display:flex;gap:3px;flex-wrap:wrap;">';
+            channels5.forEach(ch => {
+                const count = channelCounts5[ch];
+                const color = count >= 3 ? '#ff4444' : count >= 2 ? '#ffaa00' : count >= 1 ? '#00d9ff' : '#1a5a6e';
+                html += `
+                    <div style="text-align:center;min-width:28px;">
+                        <div style="width:20px;height:${Math.min(count * 10, 40)}px;background:${color};border-radius:3px;margin:auto;"></div>
+                        <div style="font-size:9px;color:#888;margin-top:2px;">${ch}</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+            
             container.innerHTML = html;
         }
         
