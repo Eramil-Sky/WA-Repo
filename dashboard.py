@@ -1138,6 +1138,21 @@ DASHBOARD_HTML = '''
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .header-sys-info {
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            padding: 8px 20px 12px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid #0f3460;
+        }
+        
+        .sys-item {
+            font-size: 12px;
+            color: #00d9ff;
         }
         
         .control-btn {
@@ -1510,6 +1525,11 @@ DASHBOARD_HTML = '''
                 🚪 Logout
             </button>
         </div>
+        <div class="header-sys-info">
+            <span class="sys-item">💾 <span id="sysStorage">Loading...</span></span>
+            <span class="sys-item">🧠 <span id="sysMemory">Loading...</span></span>
+            <span class="sys-item">📊 <span id="sysLoad">Loading...</span></span>
+        </div>
     </div>
     
     <div class="status-bar">
@@ -1561,33 +1581,6 @@ DASHBOARD_HTML = '''
                 Channel Heatmap (2.4 GHz)
             </div>
             <div class="heatmap" id="heatmap"></div>
-        </div>
-        
-        <div class="card full-width">
-            <div class="card-title">
-                <span class="icon">💾</span>
-                System Information
-            </div>
-            <div class="system-info" id="systemInfo">
-                <div class="sys-box">
-                    <div class="sys-label">Storage</div>
-                    <div class="sys-value">
-                        <span id="storageInfo">Loading...</span>
-                    </div>
-                </div>
-                <div class="sys-box">
-                    <div class="sys-label">Memory</div>
-                    <div class="sys-value">
-                        <span id="memoryInfo">Loading...</span>
-                    </div>
-                </div>
-                <div class="sys-box">
-                    <div class="sys-label">Load</div>
-                    <div class="sys-value">
-                        <span id="loadInfo">Loading...</span>
-                    </div>
-                </div>
-            </div>
         </div>
         
         <div class="card">
@@ -1699,9 +1692,9 @@ DASHBOARD_HTML = '''
                     document.getElementById('adapterInfo').innerHTML = `<span>${adapterText}</span>`;
                     
                     const sysInfo = data.system_info || {};
-                    document.getElementById('storageInfo').textContent = sysInfo.storage_used + ' / ' + sysInfo.storage_total + ' (' + sysInfo.storage_free + ' free)';
-                    document.getElementById('memoryInfo').textContent = sysInfo.memory_used + ' / ' + sysInfo.memory_total;
-                    document.getElementById('loadInfo').textContent = sysInfo.load_average || 'N/A';
+                    document.getElementById('sysStorage').textContent = sysInfo.storage_used + ' / ' + sysInfo.storage_total + ' (' + sysInfo.storage_free + ' free)';
+                    document.getElementById('sysMemory').textContent = sysInfo.memory_used + ' / ' + sysInfo.memory_total;
+                    document.getElementById('sysLoad').textContent = 'Load: ' + (sysInfo.load_average || 'N/A');
                     
                     const interference = data.interference || {};
                     document.getElementById('interferenceScore').textContent = interference.score || 0;
