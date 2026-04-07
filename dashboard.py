@@ -1360,8 +1360,22 @@ DASHBOARD_HTML = '''
         }
         
         .network-list {
-            max-height: 300px;
+            max-height: 500px;
             overflow-y: auto;
+        }
+        
+        .net-section {
+            margin-bottom: 15px;
+        }
+        
+        .net-section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #00d9ff;
+            padding: 8px 12px;
+            background: rgba(0,217,255,0.1);
+            border-radius: 6px;
+            margin-bottom: 8px;
         }
         
         .network-item {
@@ -1745,18 +1759,46 @@ DASHBOARD_HTML = '''
                 return;
             }
             
-            container.innerHTML = networks.map(net => `
-                <div class="network-item">
-                    <div class="network-info">
-                        <div class="network-name">${net.ssid || '<Hidden>'}</div>
-                        <div class="network-details">${net.bssid} | Ch ${net.channel || '?'} | ${net.band || ''}</div>
+            const net24 = networks.filter(n => n.band === '2.4GHz');
+            const net5 = networks.filter(n => n.band === '5GHz');
+            
+            let html = '';
+            
+            if (net24.length > 0) {
+                html += '<div class="net-section"><div class="net-section-title">📶 2.4 GHz (' + net24.length + ')</div>';
+                html += net24.map(net => `
+                    <div class="network-item">
+                        <div class="network-info">
+                            <div class="network-name">${net.ssid || '<Hidden>'}</div>
+                            <div class="network-details">${net.bssid} | Ch ${net.channel || '?'}</div>
+                        </div>
+                        <div class="network-signal">
+                            <div class="signal-strength">${net.rssi || '?'}</div>
+                            <div class="signal-label">dBm</div>
+                        </div>
                     </div>
-                    <div class="network-signal">
-                        <div class="signal-strength">${net.rssi || '?'}</div>
-                        <div class="signal-label">dBm</div>
+                `).join('');
+                html += '</div>';
+            }
+            
+            if (net5.length > 0) {
+                html += '<div class="net-section"><div class="net-section-title">🚀 5 GHz (' + net5.length + ')</div>';
+                html += net5.map(net => `
+                    <div class="network-item">
+                        <div class="network-info">
+                            <div class="network-name">${net.ssid || '<Hidden>'}</div>
+                            <div class="network-details">${net.bssid} | Ch ${net.channel || '?'}</div>
+                        </div>
+                        <div class="network-signal">
+                            <div class="signal-strength">${net.rssi || '?'}</div>
+                            <div class="signal-label">dBm</div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+                html += '</div>';
+            }
+            
+            container.innerHTML = html;
         }
         
         function updateConnectedList(devices) {
