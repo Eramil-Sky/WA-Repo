@@ -1391,60 +1391,6 @@ DASHBOARD_HTML = '''
             margin-top: 5px;
         }
         
-        .latency-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .latency-card {
-            background: rgba(255,255,255,0.05);
-            border: 2px solid;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .latency-card:first-child {
-            border-color: #39ff14;
-        }
-        
-        .latency-card:last-child {
-            border-color: #00d9ff;
-        }
-        
-        .latency-header {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .latency-card:first-child .latency-header {
-            color: #39ff14;
-        }
-        
-        .latency-card:last-child .latency-header {
-            color: #00d9ff;
-        }
-        
-        .latency-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #fff;
-        }
-        
-        .latency-value.good { color: #39ff14; }
-        .latency-value.medium { color: #ffaa00; }
-        .latency-value.bad { color: #ff4444; }
-        .latency-value.error { color: #888; }
-        
-        .latency-detail {
-            font-size: 11px;
-            color: #666;
-            margin-top: 5px;
-        }
-        
         .network-list {
             overflow: visible;
         }
@@ -1804,6 +1750,8 @@ DASHBOARD_HTML = '''
             </button>
         </div>
         <div class="header-sys-info">
+            <span class="sys-item">🏠 <span id="routerLatency">--</span></span>
+            <span class="sys-item">🌐 <span id="internetLatency">--</span></span>
             <span class="sys-item">💾 <span id="sysStorage">Loading...</span></span>
             <span class="sys-item">🧠 <span id="sysMemory">Loading...</span></span>
             <span class="sys-item">📊 <span id="sysLoad">Loading...</span></span>
@@ -1851,19 +1799,6 @@ DASHBOARD_HTML = '''
                 <div class="stat-box">
                     <div class="stat-value" id="interferenceScore">0</div>
                     <div class="stat-label">Interference</div>
-                </div>
-            </div>
-            
-            <div class="latency-grid">
-                <div class="latency-card" id="routerPing">
-                    <div class="latency-header">🏠 Router</div>
-                    <div class="latency-value" id="routerLatency">--</div>
-                    <div class="latency-detail" id="routerDetail">192.168.0.1</div>
-                </div>
-                <div class="latency-card" id="internetPing">
-                    <div class="latency-header">🌐 Internet</div>
-                    <div class="latency-value" id="internetLatency">--</div>
-                    <div class="latency-detail" id="internetDetail">8.8.8.8</div>
                 </div>
             </div>
             
@@ -2017,28 +1952,24 @@ DASHBOARD_HTML = '''
         
         function updateLatencyCard(type, data) {
             const valueEl = document.getElementById(type + 'Latency');
-            const detailEl = document.getElementById(type + 'Detail');
             
             if (data.error) {
-                valueEl.textContent = 'N/A';
-                valueEl.className = 'latency-value error';
-                detailEl.textContent = data.target + ' - Error';
+                valueEl.textContent = 'ERR';
+                valueEl.style.color = '#ff4444';
             } else if (data.avg !== null && data.avg !== undefined) {
-                const avg = data.avg.toFixed(1);
-                valueEl.textContent = avg + ' ms';
-                detailEl.textContent = data.target + ' | Loss: ' + data.packet_loss + '%';
+                const avg = data.avg.toFixed(0);
+                valueEl.textContent = avg + 'ms';
                 
                 if (data.avg < 50) {
-                    valueEl.className = 'latency-value good';
+                    valueEl.style.color = '#39ff14';
                 } else if (data.avg < 150) {
-                    valueEl.className = 'latency-value medium';
+                    valueEl.style.color = '#ffaa00';
                 } else {
-                    valueEl.className = 'latency-value bad';
+                    valueEl.style.color = '#ff4444';
                 }
             } else {
                 valueEl.textContent = '--';
-                valueEl.className = 'latency-value';
-                detailEl.textContent = data.target;
+                valueEl.style.color = '#888';
             }
         }
         
