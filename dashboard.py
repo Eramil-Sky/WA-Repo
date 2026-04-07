@@ -1366,14 +1366,17 @@ DASHBOARD_HTML = '''
         
         .net-container {
             display: flex;
-            flex-direction: column;
             gap: 12px;
         }
         
         .net-box {
+            flex: 1;
             border: 2px solid;
             border-radius: 10px;
             overflow: hidden;
+            max-height: 280px;
+            display: flex;
+            flex-direction: column;
         }
         
         .net-24 {
@@ -1391,6 +1394,7 @@ DASHBOARD_HTML = '''
             padding: 10px 15px;
             font-weight: bold;
             font-size: 14px;
+            flex-shrink: 0;
         }
         
         .net-24 .net-box-header {
@@ -1405,9 +1409,16 @@ DASHBOARD_HTML = '''
         
         .net-count {
             background: rgba(255,255,255,0.2);
-            padding: 2px 10px;
+            padding: 2px 12px;
             border-radius: 12px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .net-box-content {
+            overflow-y: auto;
+            flex: 1;
+            padding: 5px;
         }
         
         .network-item {
@@ -1476,18 +1487,122 @@ DASHBOARD_HTML = '''
             transition: height 0.3s ease;
         }
         
-        .recommendation-box {
-            background: rgba(0,217,255,0.1);
-            border-left: 4px solid #00d9ff;
-            padding: 15px;
-            border-radius: 0 10px 10px 0;
-            margin-bottom: 15px;
+        .rec-content {
+            font-size: 13px;
+            line-height: 1.5;
         }
         
-        .recommendation-title {
+        .rec-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .rec-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .rec-status {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .rec-status-item {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .rec-status-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .rec-status-value {
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .rec-status-value.critical { color: #ff4444; }
+        .rec-status-value.high { color: #ff9800; }
+        .rec-status-value.medium { color: #ffeb3b; }
+        .rec-status-value.low { color: #4caf50; }
+        
+        .rec-channels {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .rec-channel {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        .rec-action {
+            background: rgba(0,217,255,0.1);
+            border-left: 3px solid #00d9ff;
+            padding: 10px 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 10px;
+        }
+        
+        .rec-action-title {
             font-weight: bold;
             color: #00d9ff;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .rec-action-detail {
+            color: #aaa;
+            font-size: 12px;
+            margin-left: 24px;
+        }
+        
+        .rec-scale {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .rec-scale-item {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        
+        .rec-scale-item.green { background: rgba(76,175,80,0.2); color: #4caf50; }
+        .rec-scale-item.yellow { background: rgba(255,235,59,0.2); color: #ffeb3b; }
+        .rec-scale-item.orange { background: rgba(255,152,0,0.2); color: #ff9800; }
+        .rec-scale-item.red { background: rgba(255,68,68,0.2); color: #ff4444; }
+        
+        .rec-guide {
+            font-size: 11px;
+            color: #888;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+        }
+        
+        .rec-guide-item {
+            margin-bottom: 3px;
+        }
+        
+        .rec-guide-item:last-child {
+            margin-bottom: 0;
         }
         
         .device-list {
@@ -1673,10 +1788,10 @@ DASHBOARD_HTML = '''
         <div class="card">
             <div class="card-title">
                 <span class="icon">💡</span>
-                Recommendations
+                Analysis & Recommendations
             </div>
-            <div id="recommendations">
-                <div class="loading">Loading recommendations</div>
+            <div id="recommendations" class="rec-content">
+                <div class="loading">Loading...</div>
             </div>
         </div>
         
@@ -1800,7 +1915,7 @@ DASHBOARD_HTML = '''
             let html = '<div class="net-container">';
             
             if (net24.length > 0) {
-                html += '<div class="net-box net-24"><div class="net-box-header">📶 2.4 GHz<div class="net-count">' + net24.length + '</div></div>';
+                html += '<div class="net-box net-24"><div class="net-box-header">📶 2.4 GHz<div class="net-count">' + net24.length + '</div></div><div class="net-box-content">';
                 html += net24.map(net => `
                     <div class="network-item">
                         <div class="network-info">
@@ -1813,11 +1928,11 @@ DASHBOARD_HTML = '''
                         </div>
                     </div>
                 `).join('');
-                html += '</div>';
+                html += '</div></div>';
             }
             
             if (net5.length > 0) {
-                html += '<div class="net-box net-5"><div class="net-box-header">🚀 5 GHz<div class="net-count">' + net5.length + '</div></div>';
+                html += '<div class="net-box net-5"><div class="net-box-header">🚀 5 GHz<div class="net-count">' + net5.length + '</div></div><div class="net-box-content">';
                 html += net5.map(net => `
                     <div class="network-item">
                         <div class="network-info">
@@ -1830,7 +1945,7 @@ DASHBOARD_HTML = '''
                         </div>
                     </div>
                 `).join('');
-                html += '</div>';
+                html += '</div></div>';
             }
             
             html += '</div>';
@@ -1913,33 +2028,84 @@ DASHBOARD_HTML = '''
         
         function updateRecommendations(data) {
             const container = document.getElementById('recommendations');
+            const interf = data.interference || {};
+            const congestion = data.channel_congestion || {};
             const rec24 = data.recommendations && data.recommendations['2.4GHz'];
             const rec5 = data.recommendations && data.recommendations['5GHz'];
+            const level = interf.level || 'N/A';
+            const score = interf.score || 0;
+            const networks = data.networks || [];
             
-            if (!rec24 && !rec5) {
-                container.innerHTML = '<div class="loading">No recommendations</div>';
-                return;
-            }
+            let levelClass = 'low';
+            if (level === 'CRITICAL') levelClass = 'critical';
+            else if (level === 'HIGH') levelClass = 'high';
+            else if (level === 'MEDIUM') levelClass = 'medium';
+            
+            const channels24 = networks.filter(n => n.band === '2.4GHz').map(n => n.channel).filter(c => c);
+            const channels5 = networks.filter(n => n.band === '5GHz').map(n => n.channel).filter(c => c);
+            const uniqueChannels = [...new Set([...channels24, ...channels5])].sort((a,b) => a-b).join(', ');
             
             let html = '';
             
-            if (rec24 && rec24.recommended) {
-                html += `
-                    <div class="recommendation-box">
-                        <div class="recommendation-title">📶 Switch to 2.4 GHz Channel ${rec24.recommended}</div>
-                        <p>Recommended for less interference in 2.4 GHz band</p>
-                    </div>
-                `;
+            html += '<div class="rec-section">';
+            html += '<div class="rec-status">';
+            html += '<div class="rec-status-item"><div class="rec-status-label">Interference Level</div><div class="rec-status-value ' + levelClass + '">' + level + ' (' + score + '/15)</div></div>';
+            html += '<div class="rec-status-item"><div class="rec-status-label">Total Networks</div><div class="rec-status-value">' + networks.length + '</div></div>';
+            html += '<div class="rec-status-item"><div class="rec-status-label">2.4 GHz</div><div class="rec-status-value">' + channels24.length + '</div></div>';
+            html += '<div class="rec-status-item"><div class="rec-status-label">5 GHz</div><div class="rec-status-value">' + channels5.length + '</div></div>';
+            html += '</div>';
+            html += '<div style="margin-top:10px;font-size:12px;color:#888;">Channels in Use: ' + uniqueChannels + '</div>';
+            html += '</div>';
+            
+            if (rec24 || rec5) {
+                html += '<div class="rec-section">';
+                html += '<div style="font-weight:bold;color:#00d9ff;margin-bottom:10px;">🔧 RECOMMENDED ACTIONS</div>';
+                
+                if (rec24 && rec24.recommended) {
+                    html += '<div class="rec-action"><div class="rec-action-title">📶 Switch to 2.4 GHz Channel ' + rec24.recommended + '</div>';
+                    html += '<div class="rec-action-detail">WHY: ' + (rec24.reason || 'Less congested') + '</div>';
+                    html += '<div class="rec-action-detail">ACTION: Router Settings → Wireless → Channel → Select ' + rec24.recommended + '</div></div>';
+                }
+                
+                if (rec5 && rec5.recommended) {
+                    html += '<div class="rec-action"><div class="rec-action-title">🚀 Switch to 5 GHz (Channel ' + rec5.recommended + ')</div>';
+                    html += '<div class="rec-action-detail">WHY: 5 GHz has more channels, less interference, faster speeds</div>';
+                    html += '<div class="rec-action-detail">ACTION: Enable 5 GHz on router or connect to 5 GHz network</div></div>';
+                }
+                
+                html += '</div>';
             }
             
-            if (rec5 && rec5.recommended) {
-                html += `
-                    <div class="recommendation-box">
-                        <div class="recommendation-title">🚀 Consider 5 GHz (Channel ${rec5.recommended})</div>
-                        <p>5 GHz has more channels and less interference</p>
-                    </div>
-                `;
+            if (Object.keys(congestion).length > 0) {
+                const congested = Object.entries(congestion).filter(([ch, data]) => data.congestion_level === 'HIGH' || data.congestion_level === 'CRITICAL');
+                if (congested.length > 0) {
+                    html += '<div class="rec-section">';
+                    html += '<div style="font-weight:bold;color:#ff4444;margin-bottom:10px;">🚫 AVOID CONGESTED CHANNELS</div>';
+                    html += '<div class="rec-channels">';
+                    congested.forEach(([ch, data]) => {
+                        html += '<div class="rec-channel">' + ch + ': ' + data.count + ' networks</div>';
+                    });
+                    html += '</div></div>';
+                }
             }
+            
+            html += '<div class="rec-section">';
+            html += '<div style="font-weight:bold;margin-bottom:8px;">📋 INTERFERENCE SCALE</div>';
+            html += '<div class="rec-scale">';
+            html += '<div class="rec-scale-item green">🟢 MINIMAL (0-2)</div>';
+            html += '<div class="rec-scale-item yellow">🟡 LOW (3-5)</div>';
+            html += '<div class="rec-scale-item orange">🟠 MEDIUM (6-9)</div>';
+            html += '<div class="rec-scale-item red">🔴 HIGH (10-14)</div>';
+            html += '<div class="rec-scale-item red">⚫ CRITICAL (15+)</div>';
+            html += '</div></div>';
+            
+            html += '<div class="rec-section">';
+            html += '<div style="font-weight:bold;margin-bottom:8px;">💡 QUICK GUIDE</div>';
+            html += '<div class="rec-guide">';
+            html += '<div class="rec-guide-item">• Channels 1, 6, 11 are non-overlapping in 2.4 GHz</div>';
+            html += '<div class="rec-guide-item">• Lower interference = Faster speeds = Better experience</div>';
+            html += '<div class="rec-guide-item">• 5 GHz is faster but has shorter range</div>';
+            html += '</div></div>';
             
             container.innerHTML = html;
         }
