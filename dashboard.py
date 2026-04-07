@@ -1376,7 +1376,7 @@ DASHBOARD_HTML = '''
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            max-height: 400px;
+            max-height: 300px;
         }
         
         .net-24 {
@@ -1457,7 +1457,7 @@ DASHBOARD_HTML = '''
         
         .network-details {
             font-size: 12px;
-            color: #888;
+            color: #E6E6FA;
         }
         
         .network-signal {
