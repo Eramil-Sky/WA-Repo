@@ -205,18 +205,37 @@ class InterferenceDetector:
             channel_stats[ch]['count'] += 1
             channel_stats[ch]['total_rssi'] += rssi
         
+        total_networks = sum(stats['count'] for stats in channel_stats.values())
+        
+        if total_networks == 0:
+            return {
+                'recommended': None,
+                'reason': 'No networks detected on 2.4 GHz',
+                'alternative_channels': []
+            }
+        
         best_channel = None
         best_score = float('inf')
         
         for ch in ideal_channels:
             stats = channel_stats.get(ch, {'count': 0, 'total_rssi': 0})
-            if stats['count'] > 0:
-                score = stats['count'] * 10 + (stats['total_rssi'] / stats['count'] + 100) / 10
-            else:
+            count = stats['count']
+            if count == 0:
                 score = 0
+            else:
+                avg_rssi = stats['total_rssi'] / count
+                score = count * 20 + (avg_rssi + 100)
+            
             if score < best_score:
                 best_score = score
                 best_channel = ch
+        
+        if best_channel and channel_stats.get(best_channel, {}).get('count', 0) >= 3:
+            return {
+                'recommended': None,
+                'reason': f'All 2.4 GHz channels are congested. Consider 5 GHz instead.',
+                'alternative_channels': []
+            }
         
         return {
             'recommended': best_channel,
@@ -246,7 +265,7 @@ class InterferenceDetector:
     def _get_recommendation_reason(self, channel, stats: Dict) -> str:
         """Get reason for recommendation"""
         if not channel:
-            return 'No networks detected'
+            return 'No clear recommendation'
         
         count = stats.get(channel, {'count': 0})['count']
         

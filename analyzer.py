@@ -1937,13 +1937,17 @@ class WiFiInterferenceAnalyzer:
                 ch = rec_24['recommended']
                 networks_on_rec = [n for n in networks if n.get('channel') == ch]
                 print(f"\n   1️⃣  SWITCH TO CHANNEL {ch} (2.4 GHz)")
-                print(f"      WHY: This channel has fewer competing networks")
+                print(f"      WHY: {rec_24.get('reason', 'This channel has fewer competing networks')}")
                 if networks_on_rec:
                     print(f"      CURRENT: {len(networks_on_rec)} network(s) on this channel")
                 other_channels = [n for n in networks if n.get('channel') and n.get('channel') != ch]
                 if other_channels:
                     print(f"      OTHER CHANNELS: {len(other_channels)} network(s) competing")
                 print(f"      ACTION: Go to your router settings → Wireless → Channel → Select {ch}")
+            else:
+                reason = rec_24.get('reason', 'All 2.4 GHz channels are congested')
+                print(f"\n   ⚠️  2.4 GHz RECOMMENDATION")
+                print(f"      {reason}")
             
             if rec_5.get('recommended'):
                 ch = rec_5['recommended']
@@ -1956,7 +1960,8 @@ class WiFiInterferenceAnalyzer:
             if impact['level'] in ['HIGH', 'CRITICAL']:
                 print(f"\n   ⚠️  HIGH INTERFERENCE DETECTED")
                 print(f"      IMPACT: Slow speeds, dropped connections, poor streaming")
-                print(f"      SOLUTION: Change Wi-Fi channel or switch to 5 GHz")
+                if not rec_24.get('recommended'):
+                    print(f"      SOLUTION: Consider switching to 5 GHz for better performance")
             
             congested_chs = [ch for ch, data in congestion.items() if data.get('congestion_level') in ['HIGH', 'CRITICAL']]
             if congested_chs:
