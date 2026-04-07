@@ -18,19 +18,38 @@ class WiFiScanner:
         
     def _ensure_monitor_mode(self) -> bool:
         """Ensure interface is in monitor mode"""
+        import time
         try:
+            subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+            time.sleep(0.5)
+            
             result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
             if self.interface in result.stdout and 'Monitor' in result.stdout:
                 return True
             
             subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
-            subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
+            result1 = subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], capture_output=True, text=True)
             subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
             time.sleep(1)
             
             result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
+            if self.interface in result.stdout and 'Monitor' in result.stdout:
+                return True
+            
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'modprobe', '-r', '88XXau'], stderr=subprocess.DEVNULL)
+            time.sleep(1)
+            subprocess.run(['sudo', 'modprobe', '88XXau'], stderr=subprocess.DEVNULL)
+            time.sleep(2)
+            
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
+            time.sleep(1)
+            
+            result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
             return self.interface in result.stdout and 'Monitor' in result.stdout
-        except:
+        except Exception as e:
+            print(f"Monitor mode error: {e}")
             return False
     
     def _run_airodump_scan(self, duration: int = 20) -> str:
@@ -39,7 +58,8 @@ class WiFiScanner:
         import time
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-        time.sleep(0.5)
+        subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        time.sleep(1)
         
         csv_file = '/tmp/scan_temp'
         for f in [f'{csv_file}-01.csv', f'{csv_file}-01.kismet.csv']:

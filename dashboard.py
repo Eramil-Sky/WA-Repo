@@ -505,6 +505,7 @@ latest_analysis = {
 analyzer_running = False
 analyzer_paused = False
 analyzer_interface = 'wlan0'
+scan_counter = 0
 
 def get_interface_info(interface):
     """Get detailed interface information for verification"""
@@ -579,14 +580,26 @@ def get_system_info():
 
 def run_analysis():
     """Run continuous analysis in background"""
-    global latest_analysis, analyzer_running, analyzer_paused
+    global latest_analysis, analyzer_running, analyzer_paused, scan_counter
     
     scanner = WiFiScanner(analyzer_interface)
     detector = InterferenceDetector()
     tester = PerformanceTester(analyzer_interface)
     correlator = CorrelationEngine()
+    scan_counter = 0
     
     while analyzer_running:
+        scan_counter += 1
+        
+        if scan_counter % 50 == 0:
+            import subprocess
+            subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'modprobe', '-r', '88XXau'], stderr=subprocess.DEVNULL)
+            import time
+            time.sleep(2)
+            subprocess.run(['sudo', 'modprobe', '88XXau'], stderr=subprocess.DEVNULL)
+            time.sleep(3)
+            scanner = WiFiScanner(analyzer_interface)
         try:
             if not analyzer_paused:
                 scan_result = scanner.scan_networks()
