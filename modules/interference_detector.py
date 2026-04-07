@@ -48,7 +48,9 @@ class InterferenceDetector:
         
         for net in self.networks:
             if 'channel' in net and net['channel']:
-                channel_networks[net['channel']].append(net)
+                rssi = net.get('rssi', -100)
+                if rssi > -90 and rssi < 0:
+                    channel_networks[net['channel']].append(net)
         
         co_channel_results = {}
         
@@ -120,14 +122,20 @@ class InterferenceDetector:
         
         for net in self.networks:
             if 'channel' in net and net['channel']:
+                rssi = net.get('rssi', -100)
+                if rssi <= -90 or rssi == -1:
+                    continue
                 ch = net['channel']
                 channel_stats[ch]['count'] += 1
-                channel_stats[ch]['rssi_sum'] += net.get('rssi', -100)
+                channel_stats[ch]['rssi_sum'] += rssi
                 channel_stats[ch]['networks'].append(net.get('ssid', 'Hidden'))
         
         congestion = {}
         for ch, stats in channel_stats.items():
-            avg_rssi = stats['rssi_sum'] / stats['count']
+            if stats['count'] > 0:
+                avg_rssi = stats['rssi_sum'] / stats['count']
+            else:
+                avg_rssi = -100
             
             congestion[ch] = {
                 'network_count': stats['count'],
@@ -190,16 +198,22 @@ class InterferenceDetector:
         for net in self.networks:
             if net.get('band') != '2.4GHz' or not net.get('channel'):
                 continue
+            rssi = net.get('rssi', -100)
+            if rssi <= -90 or rssi == -1:
+                continue
             ch = net['channel']
             channel_stats[ch]['count'] += 1
-            channel_stats[ch]['total_rssi'] += net.get('rssi', -100)
+            channel_stats[ch]['total_rssi'] += rssi
         
         best_channel = None
         best_score = float('inf')
         
         for ch in ideal_channels:
-            stats = channel_stats.get(ch, {'count': 0, 'total_rssi': -100})
-            score = stats['count'] * 10 + (stats['total_rssi'] + 100) / 10
+            stats = channel_stats.get(ch, {'count': 0, 'total_rssi': 0})
+            if stats['count'] > 0:
+                score = stats['count'] * 10 + (stats['total_rssi'] / stats['count'] + 100) / 10
+            else:
+                score = 0
             if score < best_score:
                 best_score = score
                 best_channel = ch

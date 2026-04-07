@@ -1217,7 +1217,10 @@ DASHBOARD_HTML = '''
             
             networks.forEach(net => {
                 if (net.band && net.band.includes('2.4') && net.channel) {
-                    channelCounts[net.channel] = (channelCounts[net.channel] || 0) + 1;
+                    const rssi = parseInt(net.rssi) || -100;
+                    if (rssi > -90 && rssi < 0) {
+                        channelCounts[net.channel] = (channelCounts[net.channel] || 0) + 1;
+                    }
                 }
             });
             
