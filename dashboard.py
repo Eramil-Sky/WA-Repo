@@ -532,6 +532,51 @@ def get_interface_info(interface):
     
     return info
 
+def get_system_info():
+    """Get system information including storage"""
+    info = {}
+    
+    try:
+        result = subprocess.run(['df', '-h', '/'], capture_output=True, text=True, timeout=5)
+        lines = result.stdout.strip().split('\n')
+        if len(lines) >= 2:
+            parts = lines[1].split()
+            if len(parts) >= 4:
+                info['storage_total'] = parts[1]
+                info['storage_used'] = parts[2]
+                info['storage_free'] = parts[3]
+                info['storage_percent'] = parts[4]
+    except:
+        info['storage_total'] = 'N/A'
+        info['storage_used'] = 'N/A'
+        info['storage_free'] = 'N/A'
+        info['storage_percent'] = 'N/A'
+    
+    try:
+        result = subprocess.run(['free', '-h'], capture_output=True, text=True, timeout=5)
+        lines = result.stdout.strip().split('\n')
+        for line in lines:
+            if line.startswith('Mem:'):
+                parts = line.split()
+                if len(parts) >= 3:
+                    info['memory_total'] = parts[1]
+                    info['memory_used'] = parts[2]
+                    info['memory_free'] = parts[3] if len(parts) > 3 else 'N/A'
+    except:
+        info['memory_total'] = 'N/A'
+        info['memory_used'] = 'N/A'
+        info['memory_free'] = 'N/A'
+    
+    try:
+        result = subprocess.run(['cat', '/proc/loadavg'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            load = result.stdout.strip().split()
+            info['load_average'] = f"{load[0]} {load[1]} {load[2]}"
+    except:
+        info['load_average'] = 'N/A'
+    
+    return info
+
 def run_analysis():
     """Run continuous analysis in background"""
     global latest_analysis, analyzer_running, analyzer_paused
@@ -592,6 +637,7 @@ def get_data():
     """API endpoint for real-time data"""
     data = latest_analysis.copy()
     data['interface_info'] = get_interface_info(analyzer_interface)
+    data['system_info'] = get_system_info()
     return jsonify(data)
 
 @app.route('/api/interface-info')
@@ -1413,6 +1459,32 @@ DASHBOARD_HTML = '''
             color: #888;
             font-size: 12px;
         }
+        
+        .system-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        
+        .sys-box {
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .sys-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .sys-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00d9ff;
+        }
     </style>
 </head>
 <body>
@@ -1489,6 +1561,33 @@ DASHBOARD_HTML = '''
                 Channel Heatmap (2.4 GHz)
             </div>
             <div class="heatmap" id="heatmap"></div>
+        </div>
+        
+        <div class="card full-width">
+            <div class="card-title">
+                <span class="icon">💾</span>
+                System Information
+            </div>
+            <div class="system-info" id="systemInfo">
+                <div class="sys-box">
+                    <div class="sys-label">Storage</div>
+                    <div class="sys-value">
+                        <span id="storageInfo">Loading...</span>
+                    </div>
+                </div>
+                <div class="sys-box">
+                    <div class="sys-label">Memory</div>
+                    <div class="sys-value">
+                        <span id="memoryInfo">Loading...</span>
+                    </div>
+                </div>
+                <div class="sys-box">
+                    <div class="sys-label">Load</div>
+                    <div class="sys-value">
+                        <span id="loadInfo">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="card">
@@ -1598,6 +1697,11 @@ DASHBOARD_HTML = '''
                         `📡 ${ifaceInfo.interface} | ${ifaceInfo.adapter} | MAC: ${ifaceInfo.mac_address || 'N/A'} | Driver: ${ifaceInfo.driver || 'N/A'}` :
                         'Interface: wlan0 (TP-Link Archer T2U Plus)';
                     document.getElementById('adapterInfo').innerHTML = `<span>${adapterText}</span>`;
+                    
+                    const sysInfo = data.system_info || {};
+                    document.getElementById('storageInfo').textContent = sysInfo.storage_used + ' / ' + sysInfo.storage_total + ' (' + sysInfo.storage_free + ' free)';
+                    document.getElementById('memoryInfo').textContent = sysInfo.memory_used + ' / ' + sysInfo.memory_total;
+                    document.getElementById('loadInfo').textContent = sysInfo.load_average || 'N/A';
                     
                     const interference = data.interference || {};
                     document.getElementById('interferenceScore').textContent = interference.score || 0;
