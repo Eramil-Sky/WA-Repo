@@ -138,25 +138,24 @@ class WiFiScanner:
                 os.remove(f)
         
         proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
-            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+            ['sudo', 'airodump-ng', '-w', csv_file, self.interface],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         
-        time.sleep(10)
+        time.sleep(8)
+        proc.terminate()
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-        try:
-            proc.terminate()
-            proc.wait(timeout=2)
-        except:
-            subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
         
         csv_path = f'{csv_file}-01.csv'
         if os.path.exists(csv_path):
-            with open(csv_path, 'r') as f:
-                csv_content = f.read()
-            networks = self._parse_airodump_csv(csv_content)
-            probed = self.get_probed_networks(csv_content)
-            return {'networks': networks, 'probed_networks': probed}
+            try:
+                with open(csv_path, 'r') as f:
+                    csv_content = f.read()
+                networks = self._parse_airodump_csv(csv_content)
+                probed = self.get_probed_networks(csv_content)
+                return {'networks': networks, 'probed_networks': probed}
+            except:
+                return {'networks': [], 'probed_networks': []}
         
         return {'networks': [], 'probed_networks': []}
     
