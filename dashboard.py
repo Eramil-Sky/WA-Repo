@@ -600,6 +600,7 @@ def run_analysis():
             subprocess.run(['sudo', 'modprobe', '88XXau'], stderr=subprocess.DEVNULL)
             time.sleep(3)
             scanner = WiFiScanner(analyzer_interface)
+            print(f"Driver reset complete, scan #{scan_counter}")
         
         try:
             if not analyzer_paused:
@@ -626,6 +627,8 @@ def run_analysis():
                     interference_data
                 )
                 
+                print(f"Scan #{scan_counter}: Found {len(networks)} networks, {len(connected)} connected, {len(searching)} searching")
+                
                 latest_analysis = {
                     'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
                     'networks': networks,
@@ -641,7 +644,12 @@ def run_analysis():
                 latest_analysis['paused'] = True
                 
         except Exception as e:
+            import sys
+            print(f"Scan error: {e}", file=sys.stderr)
             latest_analysis['error'] = str(e)
+            latest_analysis['networks'] = latest_analysis.get('networks', [])
+            latest_analysis['connected_devices'] = latest_analysis.get('connected_devices', [])
+            latest_analysis['searching_devices'] = latest_analysis.get('searching_devices', [])
         
         time.sleep(2)
 
@@ -650,6 +658,12 @@ def run_analysis():
 def get_data():
     """API endpoint for real-time data"""
     data = latest_analysis.copy()
+    if not data.get('networks'):
+        data['networks'] = []
+    if not data.get('connected_devices'):
+        data['connected_devices'] = []
+    if not data.get('searching_devices'):
+        data['searching_devices'] = []
     data['interface_info'] = get_interface_info(analyzer_interface)
     data['system_info'] = get_system_info()
     return jsonify(data)
