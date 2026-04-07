@@ -1918,37 +1918,46 @@ class WiFiInterferenceAnalyzer:
             channels_used = set(n.get('channel') for n in networks if n.get('channel'))
             print(f"   • Channels in Use: {', '.join(str(c) for c in sorted(channels_used))}")
         
-        print("\n🔧 WHAT TO DO:")
-        
-        rec_24 = analysis['interference_data'].get('recommendations', {}).get('2.4GHz', {})
-        rec_5 = analysis['interference_data'].get('recommendations', {}).get('5GHz', {})
-        
-        if rec_24.get('recommended'):
-            ch = rec_24['recommended']
-            networks_on_rec = [n for n in networks if n.get('channel') == ch]
-            print(f"\n   1️⃣  SWITCH TO CHANNEL {ch} (2.4 GHz)")
-            print(f"      WHY: This channel has fewer competing networks")
-            if networks_on_rec:
-                print(f"      CURRENT: {len(networks_on_rec)} network(s) on this channel")
-            other_channels = [n for n in networks if n.get('channel') and n.get('channel') != ch]
-            if other_channels:
-                print(f"      OTHER CHANNELS: {len(other_channels)} network(s) competing")
-            print(f"      ACTION: Go to your router settings → Wireless → Channel → Select {ch}")
-        
-        if rec_5.get('recommended'):
-            ch = rec_5['recommended']
-            print(f"\n   2️⃣  CONSIDER 5 GHz BAND")
-            print(f"      WHY: 5 GHz has more channels and less interference")
-            print(f"      RECOMMENDED: Channel {ch}")
-            print(f"      BENEFITS: Faster speeds, less congestion, more channels")
-            print(f"      ACTION: Enable 5 GHz on your router or connect to 5 GHz network")
-        
-        if impact['level'] in ['HIGH', 'CRITICAL']:
-            print(f"\n   ⚠️  HIGH INTERFERENCE DETECTED")
-            print(f"      IMPACT: Slow speeds, dropped connections, poor streaming")
-            print(f"      SOLUTION: Change Wi-Fi channel or switch to 5 GHz")
-        
-        if networks:
+        if not networks:
+            print("\n🔧 STATUS:")
+            print("   No Wi-Fi networks detected.")
+            print("   Make sure your Wi-Fi adapter is in monitor mode and")
+            print("   there are active networks nearby.")
+            print("\n   To enable monitor mode:")
+            print("   sudo ip link set wlan1 down")
+            print("   sudo iw dev wlan1 set type monitor")
+            print("   sudo ip link set wlan1 up")
+        else:
+            print("\n🔧 WHAT TO DO:")
+            
+            rec_24 = analysis['interference_data'].get('recommendations', {}).get('2.4GHz', {})
+            rec_5 = analysis['interference_data'].get('recommendations', {}).get('5GHz', {})
+            
+            if rec_24.get('recommended'):
+                ch = rec_24['recommended']
+                networks_on_rec = [n for n in networks if n.get('channel') == ch]
+                print(f"\n   1️⃣  SWITCH TO CHANNEL {ch} (2.4 GHz)")
+                print(f"      WHY: This channel has fewer competing networks")
+                if networks_on_rec:
+                    print(f"      CURRENT: {len(networks_on_rec)} network(s) on this channel")
+                other_channels = [n for n in networks if n.get('channel') and n.get('channel') != ch]
+                if other_channels:
+                    print(f"      OTHER CHANNELS: {len(other_channels)} network(s) competing")
+                print(f"      ACTION: Go to your router settings → Wireless → Channel → Select {ch}")
+            
+            if rec_5.get('recommended'):
+                ch = rec_5['recommended']
+                print(f"\n   2️⃣  CONSIDER 5 GHz BAND")
+                print(f"      WHY: 5 GHz has more channels and less interference")
+                print(f"      RECOMMENDED: Channel {ch}")
+                print(f"      BENEFITS: Faster speeds, less congestion, more channels")
+                print(f"      ACTION: Enable 5 GHz on your router or connect to 5 GHz network")
+            
+            if impact['level'] in ['HIGH', 'CRITICAL']:
+                print(f"\n   ⚠️  HIGH INTERFERENCE DETECTED")
+                print(f"      IMPACT: Slow speeds, dropped connections, poor streaming")
+                print(f"      SOLUTION: Change Wi-Fi channel or switch to 5 GHz")
+            
             congested_chs = [ch for ch, data in congestion.items() if data.get('congestion_level') in ['HIGH', 'CRITICAL']]
             if congested_chs:
                 print(f"\n   🚫 AVOID THESE CHANNELS:")
