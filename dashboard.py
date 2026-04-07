@@ -591,7 +591,7 @@ def run_analysis():
     while analyzer_running:
         scan_counter += 1
         
-        if scan_counter % 50 == 0:
+        if scan_counter % 20 == 0:
             import subprocess
             subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
             subprocess.run(['sudo', 'modprobe', '-r', '88XXau'], stderr=subprocess.DEVNULL)
@@ -600,9 +600,10 @@ def run_analysis():
             subprocess.run(['sudo', 'modprobe', '88XXau'], stderr=subprocess.DEVNULL)
             time.sleep(3)
             scanner = WiFiScanner(analyzer_interface)
+        
         try:
             if not analyzer_paused:
-                scan_result = scanner.scan_networks()
+                scan_result = scanner.fast_scan()
                 networks = scan_result.get('networks', [])
                 probed = scan_result.get('probed_networks', [])
                 
@@ -642,7 +643,7 @@ def run_analysis():
         except Exception as e:
             latest_analysis['error'] = str(e)
         
-        time.sleep(10)
+        time.sleep(2)
 
 @app.route('/api/data')
 @require_auth

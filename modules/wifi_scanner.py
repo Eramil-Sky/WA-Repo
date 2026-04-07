@@ -96,7 +96,7 @@ class WiFiScanner:
         all_probed = []
         
         for scan_num in range(2):
-            csv_content = self._run_airodump_scan(duration=20)
+            csv_content = self._run_airodump_scan(duration=15)
             if csv_content:
                 networks = self._parse_airodump_csv(csv_content)
                 probed = self.get_probed_networks(csv_content)
@@ -123,6 +123,42 @@ class WiFiScanner:
             'networks': list(all_networks.values()),
             'probed_networks': all_probed
         }
+    
+    def fast_scan(self) -> dict:
+        """Quick single scan for dashboard - faster response time"""
+        import os
+        import time
+        
+        subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        time.sleep(0.5)
+        
+        csv_file = '/tmp/fast_scan'
+        for f in [f'{csv_file}-01.csv', f'{csv_file}-01.kismet.csv']:
+            if os.path.exists(f):
+                os.remove(f)
+        
+        proc = subprocess.Popen(
+            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
+            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+        )
+        
+        time.sleep(10)
+        subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        try:
+            proc.terminate()
+            proc.wait(timeout=2)
+        except:
+            subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        
+        csv_path = f'{csv_file}-01.csv'
+        if os.path.exists(csv_path):
+            with open(csv_path, 'r') as f:
+                csv_content = f.read()
+            networks = self._parse_airodump_csv(csv_content)
+            probed = self.get_probed_networks(csv_content)
+            return {'networks': networks, 'probed_networks': probed}
+        
+        return {'networks': [], 'probed_networks': []}
     
     def scan_networks_with_channels(self) -> list:
         """Scan with channel-by-channel approach for accurate channel info (slower but more accurate)"""
