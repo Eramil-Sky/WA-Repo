@@ -76,7 +76,33 @@ latest_analysis = {
 
 analyzer_running = False
 analyzer_paused = False
-analyzer_interface = 'wlan1'
+analyzer_interface = 'wlan0'
+
+def get_interface_info(interface):
+    """Get detailed interface information for verification"""
+    info = {'interface': interface, 'adapter': 'TP-Link Archer T2U Plus'}
+    
+    try:
+        mac_path = f'/sys/class/net/{interface}/address'
+        with open(mac_path, 'r') as f:
+            info['mac_address'] = f.read().strip()
+    except:
+        info['mac_address'] = 'Unknown'
+    
+    try:
+        driver_path = f'/sys/class/net/{interface}/device/driver'
+        driver = os.path.basename(os.readlink(driver_path))
+        info['driver'] = driver
+    except:
+        info['driver'] = 'Unknown'
+    
+    try:
+        result = subprocess.run(['iw', 'dev', interface, 'info'], capture_output=True, text=True, timeout=5)
+        info['iw_info'] = result.stdout
+    except:
+        info['iw_info'] = ''
+    
+    return info
 
 def run_analysis():
     """Run continuous analysis in background"""
@@ -136,8 +162,14 @@ def run_analysis():
 def get_data():
     """API endpoint for real-time data"""
     data = latest_analysis.copy()
-    data['interface'] = analyzer_interface
+    data['interface_info'] = get_interface_info(analyzer_interface)
     return jsonify(data)
+
+@app.route('/api/interface-info')
+@require_auth
+def get_interface_info_api():
+    """API endpoint for interface details"""
+    return jsonify(get_interface_info(analyzer_interface))
 
 @app.route('/api/networks')
 @require_auth
@@ -988,8 +1020,8 @@ DASHBOARD_HTML = '''
             <div class="status-item">
                 <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
             </div>
-            <div class="status-item">
-                <span id="interfaceInfo">Interface: wlan0 (TP-Link Archer T2U Plus)</span>
+            <div class="status-item adapter-info" id="adapterInfo">
+                <span>🔍 Detecting adapter...</span>
             </div>
         </div>
     </div>
@@ -1132,8 +1164,11 @@ DASHBOARD_HTML = '''
                     document.getElementById('connectedCount').textContent = data.connected_devices ? data.connected_devices.length : 0;
                     document.getElementById('searchingCount').textContent = data.searching_devices ? data.searching_devices.length : 0;
                     
-                    const interfaceText = data.interface ? `Interface: ${data.interface} (TP-Link Archer T2U Plus)` : 'Interface: wlan0 (TP-Link Archer T2U Plus)';
-                    document.getElementById('interfaceInfo').textContent = interfaceText;
+                    const ifaceInfo = data.interface_info || {};
+                    const adapterText = ifaceInfo.adapter ? 
+                        `📡 ${ifaceInfo.interface} | ${ifaceInfo.adapter} | MAC: ${ifaceInfo.mac_address || 'N/A'} | Driver: ${ifaceInfo.driver || 'N/A'}` :
+                        'Interface: wlan0 (TP-Link Archer T2U Plus)';
+                    document.getElementById('adapterInfo').innerHTML = `<span>${adapterText}</span>`;
                     
                     const interference = data.interference || {};
                     document.getElementById('interferenceScore').textContent = interference.score || 0;
