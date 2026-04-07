@@ -199,8 +199,14 @@ class WiFiScanner:
                     if not bssid or len(bssid) != 17 or ':' not in bssid:
                         continue
                     
+                    if bssid.replace(':', '') == '0' * 12 or bssid == '00:00:00:00:00:00':
+                        continue
+                    
                     channel = int(channel_str) if channel_str.isdigit() and int(channel_str) > 0 else None
                     rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
+                    
+                    if rssi == -1 or rssi <= -90:
+                        continue
                     
                     ssid = essid if essid and essid_len > 0 else '<Hidden>'
                     
@@ -258,7 +264,8 @@ class WiFiScanner:
                         }
                         
                         if connected_bssid and connected_bssid != '(not associated)' and ':' in connected_bssid:
-                            item['connected_bssid'] = connected_bssid
+                            if not (connected_bssid.replace(':', '') == '0' * 12 or connected_bssid == '00:00:00:00:00:00'):
+                                item['connected_bssid'] = connected_bssid
                         
                         if probed_essids and probed_essids != '(not associated)':
                             item['probed_ssids'] = [s.strip() for s in probed_essids.split(',') if s.strip()]
