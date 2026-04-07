@@ -135,7 +135,9 @@ def run_analysis():
 @require_auth
 def get_data():
     """API endpoint for real-time data"""
-    return jsonify(latest_analysis)
+    data = latest_analysis.copy()
+    data['interface'] = analyzer_interface
+    return jsonify(data)
 
 @app.route('/api/networks')
 @require_auth
@@ -452,7 +454,7 @@ def export_txt():
                     WA-CPE WI-FI ANALYZER REPORT
 ================================================================================
 Generated: {timestamp}
-Interface: wlan1 (TP-Link Archer T2U Plus)
+Interface: {analyzer_interface} (TP-Link Archer T2U Plus)
 ================================================================================
 
 INTERFERENCE SUMMARY
@@ -987,7 +989,7 @@ DASHBOARD_HTML = '''
                 <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
             </div>
             <div class="status-item">
-                <span>Interface: wlan1 (TP-Link Archer T2U Plus)</span>
+                <span id="interfaceInfo">Interface: wlan0 (TP-Link Archer T2U Plus)</span>
             </div>
         </div>
     </div>
@@ -1129,6 +1131,9 @@ DASHBOARD_HTML = '''
                     document.getElementById('networkCount').textContent = data.networks ? data.networks.length : 0;
                     document.getElementById('connectedCount').textContent = data.connected_devices ? data.connected_devices.length : 0;
                     document.getElementById('searchingCount').textContent = data.searching_devices ? data.searching_devices.length : 0;
+                    
+                    const interfaceText = data.interface ? `Interface: ${data.interface} (TP-Link Archer T2U Plus)` : 'Interface: wlan0 (TP-Link Archer T2U Plus)';
+                    document.getElementById('interfaceInfo').textContent = interfaceText;
                     
                     const interference = data.interference || {};
                     document.getElementById('interferenceScore').textContent = interference.score || 0;
