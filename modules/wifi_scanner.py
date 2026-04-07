@@ -16,22 +16,42 @@ class WiFiScanner:
         self.interface = interface
         self.supported_bands: list = [2.4, 5]
         
-    def scan_networks(self) -> dict:
-        """Scan for available Wi-Fi networks using airodump-ng"""
+    def _ensure_monitor_mode(self) -> bool:
+        """Ensure interface is in monitor mode"""
+        try:
+            result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
+            if self.interface in result.stdout and 'Monitor' in result.stdout:
+                return True
+            
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
+            time.sleep(1)
+            
+            result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
+            return self.interface in result.stdout and 'Monitor' in result.stdout
+        except:
+            return False
+    
+    def _run_airodump_scan(self, duration: int = 20) -> str:
+        """Run airodump-ng and return CSV content"""
         import os
         import time
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-        for f in ['/tmp/scan_temp-01.csv', '/tmp/scan_temp-01.kismet.csv']:
+        time.sleep(0.5)
+        
+        csv_file = '/tmp/scan_temp'
+        for f in [f'{csv_file}-01.csv', f'{csv_file}-01.kismet.csv']:
             if os.path.exists(f):
                 os.remove(f)
         
         proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', '/tmp/scan_temp', self.interface],
+            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
             stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
         )
         
-        time.sleep(30)
+        time.sleep(duration)
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
         try:
             proc.terminate()
@@ -39,16 +59,50 @@ class WiFiScanner:
         except:
             subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
         
-        try:
-            if os.path.exists('/tmp/scan_temp-01.csv'):
-                with open('/tmp/scan_temp-01.csv', 'r') as f:
-                    csv_content = f.read()
+        csv_path = f'{csv_file}-01.csv'
+        if os.path.exists(csv_path):
+            with open(csv_path, 'r') as f:
+                return f.read()
+        return ''
+    
+    def scan_networks(self) -> dict:
+        """Scan for available Wi-Fi networks using airodump-ng with improved reliability"""
+        import os
+        import time
+        
+        self._ensure_monitor_mode()
+        
+        all_networks = {}
+        all_probed = []
+        
+        for scan_num in range(2):
+            csv_content = self._run_airodump_scan(duration=20)
+            if csv_content:
                 networks = self._parse_airodump_csv(csv_content)
                 probed = self.get_probed_networks(csv_content)
-                return {'networks': networks, 'probed_networks': probed}
-        except Exception as e:
-            print(f"Scan error: {e}")
-        return {'networks': [], 'probed_networks': []}
+                
+                for net in networks:
+                    bssid = net.get('bssid', '')
+                    if bssid and bssid not in all_networks:
+                        all_networks[bssid] = net
+                    elif bssid in all_networks:
+                        existing = all_networks[bssid]
+                        if net.get('rssi', -100) > existing.get('rssi', -100):
+                            all_networks[bssid] = net
+                
+                for item in probed:
+                    found = False
+                    for i, p in enumerate(all_probed):
+                        if p.get('device_mac') == item.get('device_mac'):
+                            found = True
+                            break
+                    if not found:
+                        all_probed.append(item)
+        
+        return {
+            'networks': list(all_networks.values()),
+            'probed_networks': all_probed
+        }
     
     def scan_networks_with_channels(self) -> list:
         """Scan with channel-by-channel approach for accurate channel info (slower but more accurate)"""
@@ -205,7 +259,7 @@ class WiFiScanner:
                     channel = int(channel_str) if channel_str.isdigit() and int(channel_str) > 0 else None
                     rssi = int(power_str) if power_str.lstrip('-').isdigit() else -100
                     
-                    if rssi == -1 or rssi <= -90:
+                    if rssi == -1 or rssi < -95:
                         continue
                     
                     ssid = essid if essid and essid_len > 0 else '<Hidden>'
