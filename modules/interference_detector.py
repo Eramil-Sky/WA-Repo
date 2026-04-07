@@ -191,7 +191,7 @@ class InterferenceDetector:
     
     def _recommend_2_4ghz_channel(self) -> Dict:
         """Recommend best 2.4GHz channel"""
-        ideal_channels = [1, 6, 11]
+        all_2_4_channels = list(range(1, 14))
         
         channel_stats = defaultdict(lambda: {'count': 0, 'total_rssi': 0})
         
@@ -217,7 +217,7 @@ class InterferenceDetector:
         best_channel = None
         best_score = float('inf')
         
-        for ch in ideal_channels:
+        for ch in all_2_4_channels:
             stats = channel_stats.get(ch, {'count': 0, 'total_rssi': 0})
             count = stats['count']
             if count == 0:
@@ -240,7 +240,7 @@ class InterferenceDetector:
         return {
             'recommended': best_channel,
             'reason': self._get_recommendation_reason(best_channel, channel_stats),
-            'alternative_channels': [c for c in ideal_channels if c != best_channel]
+            'alternative_channels': sorted([c for c in all_2_4_channels if c != best_channel and channel_stats.get(c, {}).get('count', 0) < channel_stats.get(best_channel, {}).get('count', 99)])[:3]
         }
     
     def _recommend_5ghz_channel(self) -> Dict:
