@@ -605,7 +605,7 @@ def run_analysis():
         
         try:
             if not analyzer_paused:
-                scan_result = scanner.fast_scan()
+                scan_result = scanner.scan_networks()
                 
                 networks = scan_result.get('networks', [])
                 probed = scan_result.get('probed_networks', [])
