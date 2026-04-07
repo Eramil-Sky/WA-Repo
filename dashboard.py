@@ -1408,7 +1408,7 @@ DASHBOARD_HTML = '''
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            max-height: 300px;
+            max-height: 500px;
         }
         
         .net-24 {
@@ -1416,7 +1416,7 @@ DASHBOARD_HTML = '''
         }
         
         .net-5 {
-            border-color: #00d9ff;
+            border-color: #4169E1;
         }
         
         .net-box-header {
@@ -1437,8 +1437,8 @@ DASHBOARD_HTML = '''
         }
         
         .net-5 .net-box-header {
-            background: rgba(0,217,255,0.25);
-            color: #00d9ff;
+            background: rgba(65,105,225,0.25);
+            color: #4169E1;
         }
         
         .net-count {
