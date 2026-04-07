@@ -1364,28 +1364,63 @@ DASHBOARD_HTML = '''
             overflow-y: auto;
         }
         
-        .net-section {
-            margin-bottom: 15px;
+        .net-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         
-        .net-section-title {
-            font-size: 13px;
+        .net-box {
+            border: 2px solid;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .net-24 {
+            border-color: #ff9800;
+        }
+        
+        .net-5 {
+            border-color: #00d9ff;
+        }
+        
+        .net-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
             font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .net-24 .net-box-header {
+            background: rgba(255,152,0,0.15);
+            color: #ff9800;
+        }
+        
+        .net-5 .net-box-header {
+            background: rgba(0,217,255,0.15);
             color: #00d9ff;
-            padding: 8px 12px;
-            background: rgba(0,217,255,0.1);
-            border-radius: 6px;
-            margin-bottom: 8px;
+        }
+        
+        .net-count {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
         }
         
         .network-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            margin-bottom: 8px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .network-item:last-child {
+            border-bottom: none;
         }
         
         .network-info {
@@ -1762,10 +1797,10 @@ DASHBOARD_HTML = '''
             const net24 = networks.filter(n => n.band === '2.4GHz');
             const net5 = networks.filter(n => n.band === '5GHz');
             
-            let html = '';
+            let html = '<div class="net-container">';
             
             if (net24.length > 0) {
-                html += '<div class="net-section"><div class="net-section-title">📶 2.4 GHz (' + net24.length + ')</div>';
+                html += '<div class="net-box net-24"><div class="net-box-header">📶 2.4 GHz<div class="net-count">' + net24.length + '</div></div>';
                 html += net24.map(net => `
                     <div class="network-item">
                         <div class="network-info">
@@ -1782,7 +1817,7 @@ DASHBOARD_HTML = '''
             }
             
             if (net5.length > 0) {
-                html += '<div class="net-section"><div class="net-section-title">🚀 5 GHz (' + net5.length + ')</div>';
+                html += '<div class="net-box net-5"><div class="net-box-header">🚀 5 GHz<div class="net-count">' + net5.length + '</div></div>';
                 html += net5.map(net => `
                     <div class="network-item">
                         <div class="network-info">
@@ -1798,6 +1833,7 @@ DASHBOARD_HTML = '''
                 html += '</div>';
             }
             
+            html += '</div>';
             container.innerHTML = html;
         }
         
