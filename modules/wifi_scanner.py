@@ -128,16 +128,21 @@ class WiFiScanner:
         """Quick single scan for dashboard - faster response time"""
         import os
         import time
+        import signal
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
         time.sleep(0.3)
         
-        result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=3)
-        if 'Monitor' not in result.stdout:
-            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
-            subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
-            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
-            time.sleep(0.5)
+        try:
+            result = subprocess.run(['iw', 'dev', self.interface, 'info'], capture_output=True, text=True, timeout=3)
+        except:
+            try:
+                subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
+                subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
+                subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
+                time.sleep(0.5)
+            except:
+                pass
         
         csv_file = '/tmp/fast_scan'
         for f in [f'{csv_file}-01.csv', f'{csv_file}-01.kismet.csv']:
@@ -145,13 +150,17 @@ class WiFiScanner:
                 os.remove(f)
         
         proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '-w', csv_file, self.interface],
+            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         
         time.sleep(8)
-        proc.terminate()
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
+        try:
+            proc.terminate()
+            proc.wait(timeout=2)
+        except:
+            subprocess.run(['sudo', 'killall', '-9', 'airodump-ng'], stderr=subprocess.DEVNULL)
         
         csv_path = f'{csv_file}-01.csv'
         if os.path.exists(csv_path):
