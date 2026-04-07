@@ -130,7 +130,14 @@ class WiFiScanner:
         import time
         
         subprocess.run(['sudo', 'killall', 'airodump-ng'], stderr=subprocess.DEVNULL)
-        time.sleep(0.5)
+        time.sleep(0.3)
+        
+        result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=3)
+        if 'Monitor' not in result.stdout:
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'down'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'iw', 'dev', self.interface, 'set', 'type', 'monitor'], stderr=subprocess.DEVNULL)
+            subprocess.run(['sudo', 'ip', 'link', 'set', self.interface, 'up'], stderr=subprocess.DEVNULL)
+            time.sleep(0.5)
         
         csv_file = '/tmp/fast_scan'
         for f in [f'{csv_file}-01.csv', f'{csv_file}-01.kismet.csv']:
