@@ -348,7 +348,7 @@ class WiFiScanner:
             parts = [p.strip() for p in line.split(',')]
             if len(parts) >= 14:
                 try:
-                    bssid = parts[0]
+                    bssid = parts[0].upper()
                     channel_str = parts[3].strip()
                     power_str = parts[8].strip()
                     
