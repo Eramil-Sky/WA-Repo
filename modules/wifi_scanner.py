@@ -318,8 +318,6 @@ class WiFiScanner:
                     bssid = parts[0]
                     channel_str = parts[3].strip()
                     power_str = parts[8].strip()
-                    essid_len = int(parts[12].strip()) if parts[12].strip().isdigit() else 0
-                    essid = parts[13].strip() if len(parts) > 13 else ''
                     
                     if not bssid or len(bssid) != 17 or ':' not in bssid:
                         continue
@@ -333,7 +331,12 @@ class WiFiScanner:
                     if rssi == -1 or rssi < -95:
                         continue
                     
-                    ssid = essid if essid and essid_len > 0 else '<Hidden>'
+                    essid = parts[13].strip() if len(parts) > 13 else ''
+                    if not essid and parts[12].strip().isdigit():
+                        essid_len_check = int(parts[12].strip())
+                        if essid_len_check > 0 and len(parts) > 14:
+                            essid = parts[14].strip() if len(parts) > 14 else ''
+                    ssid = essid if essid else '<Hidden>'
                     
                     freq = 0
                     band = 'Unknown'
