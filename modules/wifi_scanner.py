@@ -94,6 +94,7 @@ class WiFiScanner:
         
         all_networks = {}
         all_probed = []
+        bssid_probed_ssids = {}
         
         for scan_num in range(2):
             csv_content = self._run_airodump_scan(duration=15)
@@ -101,16 +102,14 @@ class WiFiScanner:
                 networks = self._parse_airodump_csv(csv_content)
                 probed = self.get_probed_networks(csv_content)
                 
-                for net in networks:
-                    bssid = net.get('bssid', '')
-                    if bssid and bssid not in all_networks:
-                        all_networks[bssid] = net
-                    elif bssid in all_networks:
-                        existing = all_networks[bssid]
-                        if net.get('rssi', -100) > existing.get('rssi', -100):
-                            all_networks[bssid] = net
-                
                 for item in probed:
+                    connected_bssid = item.get('connected_bssid', '').upper()
+                    probed_ssids = item.get('probed_ssids', [])
+                    if connected_bssid and probed_ssids:
+                        if connected_bssid not in bssid_probed_ssids:
+                            bssid_probed_ssids[connected_bssid] = set()
+                        bssid_probed_ssids[connected_bssid].update(probed_ssids)
+                    
                     found = False
                     for i, p in enumerate(all_probed):
                         if p.get('device_mac') == item.get('device_mac'):
@@ -118,6 +117,23 @@ class WiFiScanner:
                             break
                     if not found:
                         all_probed.append(item)
+                
+                for net in networks:
+                    bssid = net.get('bssid', '').upper()
+                    if bssid and bssid not in all_networks:
+                        if net.get('ssid') == '<Hidden>' and bssid in bssid_probed_ssids:
+                            probed_list = list(bssid_probed_ssids[bssid])
+                            if probed_list:
+                                net['ssid'] = probed_list[0]
+                        all_networks[bssid] = net
+                    elif bssid in all_networks:
+                        existing = all_networks[bssid]
+                        if net.get('ssid') == '<Hidden>' and bssid in bssid_probed_ssids:
+                            probed_list = list(bssid_probed_ssids[bssid])
+                            if probed_list:
+                                existing['ssid'] = probed_list[0]
+                        if net.get('rssi', -100) > existing.get('rssi', -100):
+                            all_networks[bssid] = net
         
         return {
             'networks': list(all_networks.values()),
@@ -169,6 +185,23 @@ class WiFiScanner:
                     csv_content = f.read()
                 networks = self._parse_airodump_csv(csv_content)
                 probed = self.get_probed_networks(csv_content)
+                
+                bssid_probed_ssids = {}
+                for item in probed:
+                    connected_bssid = item.get('connected_bssid', '').upper()
+                    probed_ssids = item.get('probed_ssids', [])
+                    if connected_bssid and probed_ssids:
+                        if connected_bssid not in bssid_probed_ssids:
+                            bssid_probed_ssids[connected_bssid] = set()
+                        bssid_probed_ssids[connected_bssid].update(probed_ssids)
+                
+                for net in networks:
+                    bssid = net.get('bssid', '').upper()
+                    if net.get('ssid') == '<Hidden>' and bssid in bssid_probed_ssids:
+                        probed_list = list(bssid_probed_ssids[bssid])
+                        if probed_list:
+                            net['ssid'] = probed_list[0]
+                
                 return {'networks': networks, 'probed_networks': probed}
             except:
                 return {'networks': [], 'probed_networks': []}
