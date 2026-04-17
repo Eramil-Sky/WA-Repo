@@ -67,7 +67,7 @@ class WiFiScanner:
                 os.remove(f)
         
         proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
+            ['sudo', 'airodump-ng', '--band', 'abg', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
             stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
         )
         
@@ -166,7 +166,7 @@ class WiFiScanner:
                 os.remove(f)
         
         proc = subprocess.Popen(
-            ['sudo', 'airodump-ng', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
+            ['sudo', 'airodump-ng', '--band', 'abg', '--background', '1', '-o', 'csv', '-w', csv_file, self.interface],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         
